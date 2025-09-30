@@ -1,0 +1,147 @@
+import React from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { useData } from '../../context/DataContext';
+
+const TLRForm: React.FC = () => {
+  const { data, scores, updateTLR } = useData();
+  const { tlr } = data;
+  const tlrScores = scores.tlr;
+
+  const handleInputChange = (field: keyof typeof tlr, value: string) => {
+    const numValue = parseFloat(value) || 0;
+    updateTLR({ [field]: numValue });
+  };
+
+  const sections = [
+    {
+      title: 'Student Strength (SS)',
+      description: 'Including Doctoral Students',
+      maxMarks: 20,
+      score: tlrScores.ss,
+      fields: [
+        { key: 'studentStrength' as const, label: 'Total Students', value: tlr.studentStrength },
+        { key: 'doctoralStudents' as const, label: 'Doctoral Students', value: tlr.doctoralStudents }
+      ]
+    },
+    {
+      title: 'Faculty-Student Ratio (FSR)',
+      description: 'Emphasis on permanent faculty',
+      maxMarks: 30,
+      score: tlrScores.fsr,
+      fields: [
+        { key: 'totalFaculty' as const, label: 'Total Faculty', value: tlr.totalFaculty },
+        { key: 'permanentFaculty' as const, label: 'Permanent Faculty', value: tlr.permanentFaculty }
+      ]
+    },
+    {
+      title: 'Faculty Quality & Experience (FQE)',
+      description: 'Faculty with PhD and Experience',
+      maxMarks: 20,
+      score: tlrScores.fqe,
+      fields: [
+        { key: 'facultyWithPhD' as const, label: 'Faculty with PhD', value: tlr.facultyWithPhD },
+        { key: 'experiencedFaculty' as const, label: 'Experienced Faculty (>5 years)', value: tlr.experiencedFaculty }
+      ]
+    },
+    {
+      title: 'Financial Resources Utilization (FRU)',
+      description: 'Financial resources and their utilization',
+      maxMarks: 30,
+      score: tlrScores.fru,
+      fields: [
+        { key: 'financialResources' as const, label: 'Total Financial Resources (₹ Lakhs)', value: tlr.financialResources },
+        { key: 'resourceUtilization' as const, label: 'Resource Utilization (₹ Lakhs)', value: tlr.resourceUtilization }
+      ]
+    }
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Teaching, Learning & Resources</h1>
+          <p className="text-gray-600 mt-1">Maximum Marks: 100 | Weight: 30%</p>
+        </div>
+        <div className="text-right">
+          <div className="text-2xl font-bold text-blue-600">{tlrScores.total}/100</div>
+          <div className="text-sm text-gray-500">Current Score</div>
+        </div>
+      </div>
+
+      <div className="grid gap-6">
+        {sections.map((section, index) => (
+          <Card key={index}>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg">{section.title}</CardTitle>
+                  <CardDescription>{section.description}</CardDescription>
+                </div>
+                <div className="text-right">
+                  <Badge variant={section.score > section.maxMarks * 0.7 ? "default" : "secondary"}>
+                    {section.score.toFixed(2)}/{section.maxMarks}
+                  </Badge>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-4">
+                {section.fields.map((field) => (
+                  <div key={field.key} className="space-y-2">
+                    <Label htmlFor={field.key}>{field.label}</Label>
+                    <Input
+                      id={field.key}
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={field.value || ''}
+                      onChange={(e) => handleInputChange(field.key, e.target.value)}
+                      placeholder="Enter value"
+                    />
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <Card className="bg-blue-50 border-blue-200">
+        <CardHeader>
+          <CardTitle className="text-blue-900">TLR Summary</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+            <div>
+              <div className="text-2xl font-bold text-blue-600">{tlrScores.ss.toFixed(1)}</div>
+              <div className="text-sm text-gray-600">SS Score</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-blue-600">{tlrScores.fsr.toFixed(1)}</div>
+              <div className="text-sm text-gray-600">FSR Score</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-blue-600">{tlrScores.fqe.toFixed(1)}</div>
+              <div className="text-sm text-gray-600">FQE Score</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-blue-600">{tlrScores.fru.toFixed(1)}</div>
+              <div className="text-sm text-gray-600">FRU Score</div>
+            </div>
+          </div>
+          <div className="mt-4 pt-4 border-t border-blue-200">
+            <div className="text-center">
+              <div className="text-3xl font-bold text-blue-900">{tlrScores.total.toFixed(2)}/100</div>
+              <div className="text-sm text-gray-600">Total TLR Score</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default TLRForm;
