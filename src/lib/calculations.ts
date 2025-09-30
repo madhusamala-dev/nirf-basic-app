@@ -1,4 +1,4 @@
-import { TLRData, ResearchData, NIRFData, CalculatedScores } from './types';
+import { TLRData, ResearchData, GraduationData, OutreachData, NIRFData, CalculatedScores } from './types';
 
 // Placeholder functions for NIRF-determined calculations
 // These would be replaced with actual NIRF formulas when available
@@ -290,6 +290,154 @@ const calculateFPPP = (
   };
 };
 
+// NIRF Graduation Outcome calculations
+const calculateGPH = (
+  placementPercentage: number,
+  higherStudiesPercentage: number
+): { score: number; breakdown: CalculatedScores['graduation']['gphBreakdown'] } => {
+  // GPH = 40 × (Np/100 + Nhs/100)
+  const gphScore = 40 * (placementPercentage / 100 + higherStudiesPercentage / 100);
+  
+  return {
+    score: Math.min(40, gphScore),
+    breakdown: {
+      np: placementPercentage,
+      nhs: higherStudiesPercentage,
+      total: Math.round(Math.min(40, gphScore) * 100) / 100
+    }
+  };
+};
+
+const calculateGUE = (
+  passPercentageInStipulatedTime: number
+): { score: number; breakdown: CalculatedScores['graduation']['gueBreakdown'] } => {
+  // GUE = 15 × min[(Ng/80), 1]
+  const gueScore = 15 * Math.min(passPercentageInStipulatedTime / 80, 1);
+  
+  return {
+    score: gueScore,
+    breakdown: {
+      ng: passPercentageInStipulatedTime,
+      total: Math.round(gueScore * 100) / 100
+    }
+  };
+};
+
+const calculateGMS = (
+  medianSalary: number
+): { score: number; breakdown: CalculatedScores['graduation']['gmsBreakdown'] } => {
+  // GMS = 25 × f(MS)
+  // Placeholder scaling function - assuming 10 lakh median salary gives full marks
+  const fMs = Math.min(1, medianSalary / 1000000);
+  const gmsScore = 25 * fMs;
+  
+  return {
+    score: gmsScore,
+    breakdown: {
+      ms: medianSalary,
+      fMs: Math.round(fMs * 1000) / 1000,
+      total: Math.round(gmsScore * 100) / 100
+    }
+  };
+};
+
+const calculateGPHD = (
+  averagePhdGraduates: number
+): { score: number; breakdown: CalculatedScores['graduation']['gphdBreakdown'] } => {
+  // GPHD = 20 × f(Nphd)
+  // Placeholder scaling function - assuming 50 Ph.D graduates gives full marks
+  const fNphd = Math.min(1, averagePhdGraduates / 50);
+  const gphdScore = 20 * fNphd;
+  
+  return {
+    score: gphdScore,
+    breakdown: {
+      nphd: averagePhdGraduates,
+      fNphd: Math.round(fNphd * 1000) / 1000,
+      total: Math.round(gphdScore * 100) / 100
+    }
+  };
+};
+
+// NIRF Outreach and Inclusivity calculations
+const calculateRD = (
+  studentsFromOtherStates: number,
+  studentsFromOtherCountries: number,
+  totalStudentsEnrolled: number
+): { score: number; breakdown: CalculatedScores['outreach']['rdBreakdown'] } => {
+  const otherStatesFraction = totalStudentsEnrolled > 0 ? studentsFromOtherStates / totalStudentsEnrolled : 0;
+  const otherCountriesFraction = totalStudentsEnrolled > 0 ? studentsFromOtherCountries / totalStudentsEnrolled : 0;
+  
+  // RD = 25 × fraction of students from other states + 5 × fraction of students from other countries
+  const rdScore = 25 * otherStatesFraction + 5 * otherCountriesFraction;
+  
+  return {
+    score: Math.min(30, rdScore),
+    breakdown: {
+      otherStatesFraction: Math.round(otherStatesFraction * 1000) / 1000,
+      otherCountriesFraction: Math.round(otherCountriesFraction * 1000) / 1000,
+      total: Math.round(Math.min(30, rdScore) * 100) / 100
+    }
+  };
+};
+
+const calculateWD = (
+  womenStudentsPercentage: number,
+  womenFacultyPercentage: number
+): { score: number; breakdown: CalculatedScores['outreach']['wdBreakdown'] } => {
+  // WD = 15 × (NWS/50) + 15 × (NWF/20)
+  const studentsComponent = 15 * Math.min(womenStudentsPercentage / 50, 1);
+  const facultyComponent = 15 * Math.min(womenFacultyPercentage / 20, 1);
+  const wdScore = studentsComponent + facultyComponent;
+  
+  return {
+    score: wdScore,
+    breakdown: {
+      nws: womenStudentsPercentage,
+      nwf: womenFacultyPercentage,
+      studentsComponent: Math.round(studentsComponent * 100) / 100,
+      facultyComponent: Math.round(facultyComponent * 100) / 100,
+      total: Math.round(wdScore * 100) / 100
+    }
+  };
+};
+
+const calculateESCS = (
+  ugStudentsWithFullFeeReimbursement: number,
+  totalUgStudents: number
+): { score: number; breakdown: CalculatedScores['outreach']['escsBreakdown'] } => {
+  const nesc = totalUgStudents > 0 ? (ugStudentsWithFullFeeReimbursement / totalUgStudents) * 100 : 0;
+  
+  // ESCS = 20 × f(Nesc)
+  // Placeholder scaling function - assuming 50% students with fee reimbursement gives full marks
+  const fNesc = Math.min(1, nesc / 50);
+  const escsScore = 20 * fNesc;
+  
+  return {
+    score: escsScore,
+    breakdown: {
+      nesc: Math.round(nesc * 100) / 100,
+      fNesc: Math.round(fNesc * 1000) / 1000,
+      total: Math.round(escsScore * 100) / 100
+    }
+  };
+};
+
+const calculatePCS = (
+  facilitiesScore: number
+): { score: number; breakdown: CalculatedScores['outreach']['pcsBreakdown'] } => {
+  // PCS = 20 marks if full facilities, else proportional
+  const pcsScore = Math.min(20, facilitiesScore);
+  
+  return {
+    score: pcsScore,
+    breakdown: {
+      facilitiesScore,
+      total: Math.round(pcsScore * 100) / 100
+    }
+  };
+};
+
 export const calculateTLRScores = (data: TLRData): CalculatedScores['tlr'] => {
   // Student Strength (SS) - 20 marks
   // SS = f(NT, NE) × 15 + f(NP) × 5
@@ -380,23 +528,83 @@ export const calculateResearchScores = (researchData: ResearchData, tlrData: TLR
   };
 };
 
+export const calculateGraduationScores = (graduationData: GraduationData): CalculatedScores['graduation'] => {
+  // Placement and Higher Studies (GPH) - 40 marks
+  const gphResult = calculateGPH(graduationData.placementPercentage, graduationData.higherStudiesPercentage);
+  
+  // University Examinations (GUE) - 15 marks
+  const gueResult = calculateGUE(graduationData.passPercentageInStipulatedTime);
+  
+  // Median Salary (GMS) - 25 marks
+  const gmsResult = calculateGMS(graduationData.medianSalaryGraduates);
+  
+  // Ph.D Graduates (GPHD) - 20 marks
+  const gphdResult = calculateGPHD(graduationData.averagePhdGraduates);
+  
+  const total = gphResult.score + gueResult.score + gmsResult.score + gphdResult.score;
+  
+  return {
+    gph: Math.round(gphResult.score * 100) / 100,
+    gphBreakdown: gphResult.breakdown,
+    gue: Math.round(gueResult.score * 100) / 100,
+    gueBreakdown: gueResult.breakdown,
+    gms: Math.round(gmsResult.score * 100) / 100,
+    gmsBreakdown: gmsResult.breakdown,
+    gphd: Math.round(gphdResult.score * 100) / 100,
+    gphdBreakdown: gphdResult.breakdown,
+    total: Math.round(total * 100) / 100
+  };
+};
+
+export const calculateOutreachScores = (outreachData: OutreachData): CalculatedScores['outreach'] => {
+  // Region Diversity (RD) - 30 marks
+  const rdResult = calculateRD(
+    outreachData.studentsFromOtherStates,
+    outreachData.studentsFromOtherCountries,
+    outreachData.totalStudentsEnrolled
+  );
+  
+  // Women Diversity (WD) - 30 marks
+  const wdResult = calculateWD(outreachData.womenStudentsPercentage, outreachData.womenFacultyPercentage);
+  
+  // Economically and Socially Challenged Students (ESCS) - 20 marks
+  const escsResult = calculateESCS(outreachData.ugStudentsWithFullFeeReimbursement, outreachData.totalUgStudents);
+  
+  // Facilities for Physically Challenged Students (PCS) - 20 marks
+  const pcsResult = calculatePCS(outreachData.physicallyCharallengedFacilitiesScore);
+  
+  const total = rdResult.score + wdResult.score + escsResult.score + pcsResult.score;
+  
+  return {
+    rd: Math.round(rdResult.score * 100) / 100,
+    rdBreakdown: rdResult.breakdown,
+    wd: Math.round(wdResult.score * 100) / 100,
+    wdBreakdown: wdResult.breakdown,
+    escs: Math.round(escsResult.score * 100) / 100,
+    escsBreakdown: escsResult.breakdown,
+    pcs: Math.round(pcsResult.score * 100) / 100,
+    pcsBreakdown: pcsResult.breakdown,
+    total: Math.round(total * 100) / 100
+  };
+};
+
 export const calculateFinalScore = (data: NIRFData): CalculatedScores => {
   const tlrScores = calculateTLRScores(data.tlr);
   const researchScores = calculateResearchScores(data.research, data.tlr);
+  const graduationScores = calculateGraduationScores(data.graduation);
+  const outreachScores = calculateOutreachScores(data.outreach);
   
-  // Simplified calculations for other sections (would need actual formulas)
-  const graduationScore = Math.min(100, (data.graduation.graduationRate * 0.3 + data.graduation.employmentRate * 0.4 + data.graduation.higherStudiesRate * 0.2 + (data.graduation.medianSalary / 1000000) * 0.1 * 100));
-  const outreachScore = Math.min(100, (data.outreach.diversityIndex * 0.25 + data.outreach.womenEnrollment * 0.25 + data.outreach.economicallyBackward * 0.25 + data.outreach.sociallyBackward * 0.25));
+  // Simplified calculation for perception section (would need actual formulas)
   const perceptionScore = Math.min(100, (data.perception.academicPeerScore * 0.4 + data.perception.employerScore * 0.4 + data.perception.publicationImpact * 0.2));
 
   // Apply weightages: TLR(30%), Research(30%), Graduation(20%), Outreach(10%), Perception(10%)
-  const finalScore = (tlrScores.total * 0.30) + (researchScores.total * 0.30) + (graduationScore * 0.20) + (outreachScore * 0.10) + (perceptionScore * 0.10);
+  const finalScore = (tlrScores.total * 0.30) + (researchScores.total * 0.30) + (graduationScores.total * 0.20) + (outreachScores.total * 0.10) + (perceptionScore * 0.10);
 
   return {
     tlr: tlrScores,
     research: researchScores,
-    graduation: Math.round(graduationScore * 100) / 100,
-    outreach: Math.round(outreachScore * 100) / 100,
+    graduation: graduationScores,
+    outreach: outreachScores,
     perception: Math.round(perceptionScore * 100) / 100,
     finalScore: Math.round(finalScore * 100) / 100
   };

@@ -19,6 +19,8 @@ import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 import TLRForm from '../components/forms/TLRForm';
 import ResearchForm from '../components/forms/ResearchForm';
+import GraduationForm from '../components/forms/GraduationForm';
+import OutreachForm from '../components/forms/OutreachForm';
 import ResultsDashboard from '../components/ResultsDashboard';
 
 const Dashboard: React.FC = () => {
@@ -53,7 +55,7 @@ const Dashboard: React.FC = () => {
       id: 'graduation',
       name: 'Graduation Outcomes',
       icon: GraduationCap,
-      score: scores.graduation,
+      score: scores.graduation.total,
       maxScore: 100,
       weight: 20,
       completed: completionStatus.graduation,
@@ -63,7 +65,7 @@ const Dashboard: React.FC = () => {
       id: 'outreach',
       name: 'Outreach and Inclusivity',
       icon: Heart,
-      score: scores.outreach,
+      score: scores.outreach.total,
       maxScore: 100,
       weight: 10,
       completed: completionStatus.outreach,
@@ -222,27 +224,11 @@ const Dashboard: React.FC = () => {
           </TabsContent>
 
           <TabsContent value="graduation">
-            <Card>
-              <CardHeader>
-                <CardTitle>Graduation Outcomes</CardTitle>
-                <CardDescription>Student graduation and placement metrics</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-500">Graduation Outcomes form will be implemented here.</p>
-              </CardContent>
-            </Card>
+            <GraduationForm />
           </TabsContent>
 
           <TabsContent value="outreach">
-            <Card>
-              <CardHeader>
-                <CardTitle>Outreach and Inclusivity</CardTitle>
-                <CardDescription>Diversity and inclusivity metrics</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-500">Outreach and Inclusivity form will be implemented here.</p>
-              </CardContent>
-            </Card>
+            <OutreachForm />
           </TabsContent>
 
           <TabsContent value="perception">

@@ -76,12 +76,31 @@ const initialData: NIRFData = {
     projects: 0
   },
   graduation: {
+    // Graduation Outcome fields - Updated for NIRF calculation
+    placementPercentage: 0,
+    higherStudiesPercentage: 0,
+    passPercentageInStipulatedTime: 0,
+    medianSalaryGraduates: 0,
+    averagePhdGraduates: 0,
+    
+    // Legacy fields
     graduationRate: 0,
     employmentRate: 0,
     higherStudiesRate: 0,
     medianSalary: 0
   },
   outreach: {
+    // Outreach and Inclusivity fields - Updated for NIRF calculation
+    studentsFromOtherStates: 0,
+    totalStudentsEnrolled: 0,
+    studentsFromOtherCountries: 0,
+    womenStudentsPercentage: 0,
+    womenFacultyPercentage: 0,
+    ugStudentsWithFullFeeReimbursement: 0,
+    totalUgStudents: 0,
+    physicallyCharallengedFacilitiesScore: 0,
+    
+    // Legacy fields
     diversityIndex: 0,
     womenEnrollment: 0,
     economicallyBackward: 0,

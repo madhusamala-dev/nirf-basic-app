@@ -75,6 +75,20 @@ export interface ResearchData {
 }
 
 export interface GraduationData {
+  // Placement and Higher Studies (GPH) - 40 marks
+  placementPercentage: number; // Np - Percentage of graduating students placed (3 years)
+  higherStudiesPercentage: number; // Nhs - Percentage of graduating students in higher studies (3 years)
+  
+  // University Examinations (GUE) - 15 marks
+  passPercentageInStipulatedTime: number; // Ng - Pass rate in stipulated time (3-year average)
+  
+  // Median Salary (GMS) - 25 marks
+  medianSalaryGraduates: number; // MS - Median salary of graduates (3 years)
+  
+  // Ph.D Graduates (GPHD) - 20 marks
+  averagePhdGraduates: number; // Nphd - Average Ph.D graduates (3 years)
+  
+  // Legacy fields for backward compatibility
   graduationRate: number;
   employmentRate: number;
   higherStudiesRate: number;
@@ -82,6 +96,23 @@ export interface GraduationData {
 }
 
 export interface OutreachData {
+  // Region Diversity (RD) - 30 marks
+  studentsFromOtherStates: number; // Students from other states
+  totalStudentsEnrolled: number; // Total students for calculating fractions
+  studentsFromOtherCountries: number; // Students from other countries
+  
+  // Women Diversity (WD) - 30 marks
+  womenStudentsPercentage: number; // NWS - Percentage of women students
+  womenFacultyPercentage: number; // NWF - Percentage of women faculty
+  
+  // Economically and Socially Challenged Students (ESCS) - 20 marks
+  ugStudentsWithFullFeeReimbursement: number; // UG students with full tuition fee reimbursement
+  totalUgStudents: number; // Total UG students for percentage calculation
+  
+  // Facilities for Physically Challenged Students (PCS) - 20 marks
+  physicallyCharallengedFacilitiesScore: number; // Score based on facilities provided (0-20)
+  
+  // Legacy fields for backward compatibility
   diversityIndex: number;
   womenEnrollment: number;
   economicallyBackward: number;
@@ -179,8 +210,60 @@ export interface CalculatedScores {
     };
     total: number;
   };
-  graduation: number;
-  outreach: number;
+  graduation: {
+    gph: number;
+    gphBreakdown: {
+      np: number; // Placement percentage
+      nhs: number; // Higher studies percentage
+      total: number;
+    };
+    gue: number;
+    gueBreakdown: {
+      ng: number; // Pass percentage in stipulated time
+      total: number;
+    };
+    gms: number;
+    gmsBreakdown: {
+      ms: number; // Median salary
+      fMs: number; // f(MS)
+      total: number;
+    };
+    gphd: number;
+    gphdBreakdown: {
+      nphd: number; // Average Ph.D graduates
+      fNphd: number; // f(Nphd)
+      total: number;
+    };
+    total: number;
+  };
+  outreach: {
+    rd: number;
+    rdBreakdown: {
+      otherStatesFraction: number;
+      otherCountriesFraction: number;
+      total: number;
+    };
+    wd: number;
+    wdBreakdown: {
+      nws: number; // Women students percentage
+      nwf: number; // Women faculty percentage
+      studentsComponent: number; // 15 × (NWS/50)
+      facultyComponent: number; // 15 × (NWF/20)
+      total: number;
+    };
+    escs: number;
+    escsBreakdown: {
+      nesc: number; // Percentage with fee reimbursement
+      fNesc: number; // f(Nesc)
+      total: number;
+    };
+    pcs: number;
+    pcsBreakdown: {
+      facilitiesScore: number;
+      total: number;
+    };
+    total: number;
+  };
   perception: number;
   finalScore: number;
 }
