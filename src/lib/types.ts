@@ -51,18 +51,23 @@ export interface ResearchData {
   totalWeightedPublications: number; // P - weighted publications from third-party sources
   retractedPublications: number; // Pret - number of retracted publications
   
-  // Quality of Publications (QP) - 40 marks (placeholder)
-  qualityPublications: number;
+  // Quality of Publications (QP) - 40 marks
+  totalCitationCount: number; // CC - Total citation count over previous 3 years
+  top25PercentileCitations: number; // TOP25P - Citations in top 25 percentile over previous 3 years
+  retractedCitations: number; // Cret - Total retracted citations over previous 3 years
   
-  // IPR and Patents (IPR) - 15 marks (placeholder)
-  patentsPublished: number;
-  patentsGranted: number;
+  // IPR and Patents (IPR) - 15 marks
+  patentsGranted: number; // PG - Patents granted over previous 3 years
+  patentsPublished: number; // PP - Patents published over previous 3 years
   
-  // Footprint of Projects and Professional Practice (FPPP) - 10 marks (placeholder)
-  projectsFootprint: number;
-  professionalPractice: number;
+  // Footprint of Projects and Professional Practice (FPPP) - 10 marks
+  averageResearchFundingPerFaculty: number; // RF - Average annual research funding per faculty (₹) over previous 3 years
+  averageConsultancyPerFaculty: number; // CF - Average annual consultancy amount per faculty (₹) over previous 3 years
   
   // Legacy fields for backward compatibility
+  qualityPublications: number;
+  projectsFootprint: number;
+  professionalPractice: number;
   publications: number;
   citations: number;
   patents: number;
@@ -144,9 +149,34 @@ export interface CalculatedScores {
       fRetracted: number; // f(Pret)
       total: number;
     };
-    qp: number; // Quality of Publications (placeholder)
-    ipr: number; // IPR and Patents (placeholder)
-    fppp: number; // Footprint of Projects and Professional Practice (placeholder)
+    qp: number;
+    qpBreakdown: {
+      cc: number; // Total citation count
+      top25p: number; // Top 25% citations
+      cret: number; // Retracted citations
+      citationRatio: number; // CC/FRQ
+      top25Ratio: number; // TOP25P/P
+      fCitationRatio: number; // f(CC/FRQ)
+      fTop25Ratio: number; // f(TOP25P/P)
+      fRetractedCitations: number; // f(Cret)
+      total: number;
+    };
+    ipr: number;
+    iprBreakdown: {
+      pg: number; // Patents granted
+      pp: number; // Patents published
+      ipg: number; // IPG = 10 × f(PG)
+      ipp: number; // IPP = 5 × f(PP)
+      total: number;
+    };
+    fppp: number;
+    fpppBreakdown: {
+      rf: number; // Average research funding per faculty
+      cf: number; // Average consultancy per faculty
+      fpr: number; // FPR = 7.5 × f(RF)
+      fpc: number; // FPC = 2.5 × f(CF)
+      total: number;
+    };
     total: number;
   };
   graduation: number;

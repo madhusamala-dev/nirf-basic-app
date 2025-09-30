@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Info, BookOpen } from 'lucide-react';
+import { Info, BookOpen, Award, Briefcase, TrendingUp } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 
 const ResearchForm: React.FC = () => {
@@ -18,12 +18,22 @@ const ResearchForm: React.FC = () => {
     updateResearch({ [field]: numValue });
   };
 
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
   const sections = [
     {
       title: 'Publications (PU)',
       description: 'Combined metric for publications from third-party sources',
       maxMarks: 35,
       score: researchScores.pu,
+      icon: BookOpen,
       fields: [
         { 
           key: 'totalWeightedPublications' as const, 
@@ -41,15 +51,28 @@ const ResearchForm: React.FC = () => {
     },
     {
       title: 'Quality of Publications (QP)',
-      description: 'Quality assessment of research publications',
+      description: 'Citation metrics and publication quality assessment',
       maxMarks: 40,
       score: researchScores.qp,
+      icon: Award,
       fields: [
         { 
-          key: 'qualityPublications' as const, 
-          label: 'Quality Publications Score', 
-          value: research.qualityPublications,
-          description: 'Quality metrics for publications (to be implemented with specific NIRF formula)'
+          key: 'totalCitationCount' as const, 
+          label: 'Total Citation Count (CC)', 
+          value: research.totalCitationCount,
+          description: 'Total citation count over the previous three years'
+        },
+        { 
+          key: 'top25PercentileCitations' as const, 
+          label: 'Top 25 Percentile Citations (TOP25P)', 
+          value: research.top25PercentileCitations,
+          description: 'Number of citations in the top 25 percentile averaged over the previous three years'
+        },
+        { 
+          key: 'retractedCitations' as const, 
+          label: 'Retracted Citations (Cret)', 
+          value: research.retractedCitations,
+          description: 'Total retracted citations count over the previous three years'
         }
       ]
     },
@@ -58,38 +81,40 @@ const ResearchForm: React.FC = () => {
       description: 'Intellectual Property Rights and Patents',
       maxMarks: 15,
       score: researchScores.ipr,
+      icon: TrendingUp,
       fields: [
         { 
-          key: 'patentsPublished' as const, 
-          label: 'Patents Published', 
-          value: research.patentsPublished,
-          description: 'Number of patents published'
+          key: 'patentsGranted' as const, 
+          label: 'Patents Granted (PG)', 
+          value: research.patentsGranted,
+          description: 'Number of patents granted over the previous three years'
         },
         { 
-          key: 'patentsGranted' as const, 
-          label: 'Patents Granted', 
-          value: research.patentsGranted,
-          description: 'Number of patents granted'
+          key: 'patentsPublished' as const, 
+          label: 'Patents Published (PP)', 
+          value: research.patentsPublished,
+          description: 'Number of patents published over the previous three years'
         }
       ]
     },
     {
       title: 'Footprint of Projects and Professional Practice (FPPP)',
-      description: 'Projects and professional practice impact',
+      description: 'Research funding and consultancy impact',
       maxMarks: 10,
       score: researchScores.fppp,
+      icon: Briefcase,
       fields: [
         { 
-          key: 'projectsFootprint' as const, 
-          label: 'Projects Footprint', 
-          value: research.projectsFootprint,
-          description: 'Impact and footprint of research projects'
+          key: 'averageResearchFundingPerFaculty' as const, 
+          label: 'Average Research Funding per Faculty (RF) - ₹', 
+          value: research.averageResearchFundingPerFaculty,
+          description: 'Average annual research funding earnings (amount actually received) per faculty over the previous three years'
         },
         { 
-          key: 'professionalPractice' as const, 
-          label: 'Professional Practice Score', 
-          value: research.professionalPractice,
-          description: 'Professional practice and industry engagement metrics'
+          key: 'averageConsultancyPerFaculty' as const, 
+          label: 'Average Consultancy per Faculty (CF) - ₹', 
+          value: research.averageConsultancyPerFaculty,
+          description: 'Average annual consultancy amount (amount actually received) per faculty over the previous three years'
         }
       ]
     }
@@ -113,9 +138,12 @@ const ResearchForm: React.FC = () => {
           <Card key={index}>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-lg">{section.title}</CardTitle>
-                  <CardDescription>{section.description}</CardDescription>
+                <div className="flex items-center gap-3">
+                  <section.icon className="h-6 w-6 text-gray-600" />
+                  <div>
+                    <CardTitle className="text-lg">{section.title}</CardTitle>
+                    <CardDescription>{section.description}</CardDescription>
+                  </div>
                 </div>
                 <div className="text-right">
                   <Badge variant={section.score > section.maxMarks * 0.7 ? "default" : "secondary"}>
@@ -133,7 +161,7 @@ const ResearchForm: React.FC = () => {
                       id={field.key}
                       type="number"
                       min="0"
-                      step="1"
+                      step={field.key.includes('Funding') || field.key.includes('Consultancy') ? "1000" : "1"}
                       value={field.value || ''}
                       onChange={(e) => handleInputChange(field.key, e.target.value)}
                       placeholder="Enter value"
@@ -164,18 +192,6 @@ const ResearchForm: React.FC = () => {
                     </div>
                   </div>
                   
-                  <div className="bg-gray-50 p-3 rounded mb-3">
-                    <div className="font-medium text-sm mb-2">PU Score Breakdown:</div>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div>
-                        <span className="font-medium">Publication Component:</span> {(35 * researchScores.puBreakdown.fPublicationRatio).toFixed(2)} marks
-                      </div>
-                      <div>
-                        <span className="font-medium">Retraction Penalty:</span> -{(5 * researchScores.puBreakdown.fRetracted).toFixed(2)} marks
-                      </div>
-                    </div>
-                  </div>
-                  
                   <Alert className="mt-3">
                     <BookOpen className="h-4 w-4" />
                     <AlertDescription>
@@ -185,13 +201,98 @@ const ResearchForm: React.FC = () => {
                 </div>
               )}
 
-              {/* Show placeholder information for other components */}
-              {index > 0 && (
+              {/* Show QP calculation breakdown */}
+              {index === 1 && (
                 <div className="mt-4 pt-4 border-t border-gray-200">
-                  <Alert>
-                    <Info className="h-4 w-4" />
+                  <h4 className="font-medium text-sm mb-3">Quality of Publications (QP) Assessment:</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm mb-4">
+                    <div className="bg-blue-50 p-3 rounded">
+                      <div className="font-medium">Citation Ratio (CC/FRQ)</div>
+                      <div className="text-blue-600 font-bold">{researchScores.qpBreakdown.citationRatio.toFixed(2)}</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        Citations per faculty requirement
+                      </div>
+                    </div>
+                    <div className="bg-green-50 p-3 rounded">
+                      <div className="font-medium">Top 25% Ratio (TOP25P/P)</div>
+                      <div className="text-green-600 font-bold">{researchScores.qpBreakdown.top25Ratio.toFixed(3)}</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        High-impact citation ratio
+                      </div>
+                    </div>
+                    <div className="bg-red-50 p-3 rounded">
+                      <div className="font-medium">Retracted Citations</div>
+                      <div className="text-red-600 font-bold">{researchScores.qpBreakdown.cret}</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        Penalty component
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <Alert className="mt-3">
+                    <Award className="h-4 w-4" />
                     <AlertDescription>
-                      <strong>Implementation Note:</strong> This component uses placeholder calculations. Specific NIRF formulas will be implemented based on official guidelines.
+                      <strong>Quality Metrics:</strong> Top 25 percentile citations indicate high-impact research. Citation counts should reflect actual impact over the previous three years.
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              )}
+
+              {/* Show IPR calculation breakdown */}
+              {index === 2 && (
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <h4 className="font-medium text-sm mb-3">IPR and Patents Assessment:</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm mb-4">
+                    <div className="bg-blue-50 p-3 rounded">
+                      <div className="font-medium">IPG Component</div>
+                      <div className="text-blue-600 font-bold">{researchScores.iprBreakdown.ipg.toFixed(2)}/10</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        10 × f(Patents Granted)
+                      </div>
+                    </div>
+                    <div className="bg-green-50 p-3 rounded">
+                      <div className="font-medium">IPP Component</div>
+                      <div className="text-green-600 font-bold">{researchScores.iprBreakdown.ipp.toFixed(2)}/5</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        5 × f(Patents Published)
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <Alert className="mt-3">
+                    <TrendingUp className="h-4 w-4" />
+                    <AlertDescription>
+                      <strong>Patent Assessment:</strong> Granted patents carry higher weight than published patents. Include only patents from the previous three years.
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              )}
+
+              {/* Show FPPP calculation breakdown */}
+              {index === 3 && (
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <h4 className="font-medium text-sm mb-3">Projects and Professional Practice Assessment:</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm mb-4">
+                    <div className="bg-blue-50 p-3 rounded">
+                      <div className="font-medium">Research Funding (FPR)</div>
+                      <div className="text-blue-600 font-bold">{researchScores.fpppBreakdown.fpr.toFixed(2)}/7.5</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {formatCurrency(researchScores.fpppBreakdown.rf)} per faculty
+                      </div>
+                    </div>
+                    <div className="bg-green-50 p-3 rounded">
+                      <div className="font-medium">Consultancy (FPC)</div>
+                      <div className="text-green-600 font-bold">{researchScores.fpppBreakdown.fpc.toFixed(2)}/2.5</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {formatCurrency(researchScores.fpppBreakdown.cf)} per faculty
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <Alert className="mt-3">
+                    <Briefcase className="h-4 w-4" />
+                    <AlertDescription>
+                      <strong>Funding Metrics:</strong> Include only amounts actually received (not sanctioned). Research funding carries higher weight than consultancy in the FPPP calculation.
                     </AlertDescription>
                   </Alert>
                 </div>
@@ -228,6 +329,9 @@ const ResearchForm: React.FC = () => {
           <div className="text-center">
             <div className="text-3xl font-bold text-green-900">{researchScores.total.toFixed(2)}/100</div>
             <div className="text-sm text-gray-600">Total Research Score</div>
+            <div className="text-xs text-gray-500 mt-1">
+              RP = PU({researchScores.pu.toFixed(1)}) + QP({researchScores.qp.toFixed(1)}) + IPR({researchScores.ipr.toFixed(1)}) + FPPP({researchScores.fppp.toFixed(1)})
+            </div>
           </div>
         </CardContent>
       </Card>

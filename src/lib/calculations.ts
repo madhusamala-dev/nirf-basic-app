@@ -189,6 +189,107 @@ const calculatePU = (
   };
 };
 
+// NIRF Quality of Publications (QP) calculation
+const calculateQP = (
+  totalCitationCount: number,
+  top25PercentileCitations: number,
+  retractedCitations: number,
+  totalWeightedPublications: number,
+  frq: number
+): { score: number; breakdown: CalculatedScores['research']['qpBreakdown'] } => {
+  
+  // Calculate CC/FRQ ratio
+  const citationRatio = frq > 0 ? totalCitationCount / frq : 0;
+  
+  // Calculate TOP25P/P ratio
+  const top25Ratio = totalWeightedPublications > 0 ? top25PercentileCitations / totalWeightedPublications : 0;
+  
+  // Apply scaling functions
+  const fCitationRatio = Math.min(1, citationRatio / 100); // Assuming 100 citations per faculty gives full marks
+  const fTop25Ratio = Math.min(1, top25Ratio); // Ratio is already 0-1, so cap at 1
+  const fRetractedCitations = Math.min(1, retractedCitations / 10); // Penalty scaling for retracted citations
+  
+  // QP = {20 × f(CC/FRQ) + 20 × f(TOP25P/P)} - 5 × f(Cret)
+  const qpScore = Math.max(0, 20 * fCitationRatio + 20 * fTop25Ratio - 5 * fRetractedCitations);
+  
+  return {
+    score: qpScore,
+    breakdown: {
+      cc: totalCitationCount,
+      top25p: top25PercentileCitations,
+      cret: retractedCitations,
+      citationRatio: Math.round(citationRatio * 100) / 100,
+      top25Ratio: Math.round(top25Ratio * 1000) / 1000,
+      fCitationRatio: Math.round(fCitationRatio * 1000) / 1000,
+      fTop25Ratio: Math.round(fTop25Ratio * 1000) / 1000,
+      fRetractedCitations: Math.round(fRetractedCitations * 1000) / 1000,
+      total: Math.round(qpScore * 100) / 100
+    }
+  };
+};
+
+// NIRF IPR and Patents calculation
+const calculateIPR = (
+  patentsGranted: number,
+  patentsPublished: number
+): { score: number; breakdown: CalculatedScores['research']['iprBreakdown'] } => {
+  
+  // Apply scaling functions
+  const fPatentsGranted = Math.min(1, patentsGranted / 20); // Assuming 20 granted patents gives full marks
+  const fPatentsPublished = Math.min(1, patentsPublished / 30); // Assuming 30 published patents gives full marks
+  
+  // IPG = 10 × f(PG)
+  const ipg = 10 * fPatentsGranted;
+  
+  // IPP = 5 × f(PP)
+  const ipp = 5 * fPatentsPublished;
+  
+  // IPR = IPG + IPP
+  const iprScore = ipg + ipp;
+  
+  return {
+    score: iprScore,
+    breakdown: {
+      pg: patentsGranted,
+      pp: patentsPublished,
+      ipg: Math.round(ipg * 100) / 100,
+      ipp: Math.round(ipp * 100) / 100,
+      total: Math.round(iprScore * 100) / 100
+    }
+  };
+};
+
+// NIRF Footprint of Projects and Professional Practice calculation
+const calculateFPPP = (
+  averageResearchFundingPerFaculty: number,
+  averageConsultancyPerFaculty: number
+): { score: number; breakdown: CalculatedScores['research']['fpppBreakdown'] } => {
+  
+  // Apply scaling functions
+  const fResearchFunding = Math.min(1, averageResearchFundingPerFaculty / 1000000); // Assuming 10 lakh per faculty gives full marks
+  const fConsultancy = Math.min(1, averageConsultancyPerFaculty / 500000); // Assuming 5 lakh per faculty gives full marks
+  
+  // FPR = 7.5 × f(RF)
+  const fpr = 7.5 * fResearchFunding;
+  
+  // FPC = 2.5 × f(CF)
+  const fpc = 2.5 * fConsultancy;
+  
+  // FPPP = FPR + FPC
+  const fpppScore = fpr + fpc;
+  
+  return {
+    score: fpppScore,
+    breakdown: {
+      rf: averageResearchFundingPerFaculty,
+      cf: averageConsultancyPerFaculty,
+      fpr: Math.round(fpr * 100) / 100,
+      fpc: Math.round(fpc * 100) / 100,
+      total: Math.round(fpppScore * 100) / 100
+    }
+  };
+};
+
 export const calculateTLRScores = (data: TLRData): CalculatedScores['tlr'] => {
   // Student Strength (SS) - 20 marks
   // SS = f(NT, NE) × 15 + f(NP) × 5
@@ -246,19 +347,35 @@ export const calculateResearchScores = (researchData: ResearchData, tlrData: TLR
   // Publications (PU) - 35 marks
   const puResult = calculatePU(researchData.totalWeightedPublications, researchData.retractedPublications, frq);
   
-  // Placeholder calculations for other components (to be implemented)
-  const qpScore = Math.min(40, researchData.qualityPublications * 0.5); // Quality of Publications
-  const iprScore = Math.min(15, (researchData.patentsPublished + researchData.patentsGranted) * 0.3); // IPR and Patents
-  const fpppScore = Math.min(10, (researchData.projectsFootprint + researchData.professionalPractice) * 0.2); // FPPP
+  // Quality of Publications (QP) - 40 marks
+  const qpResult = calculateQP(
+    researchData.totalCitationCount,
+    researchData.top25PercentileCitations,
+    researchData.retractedCitations,
+    researchData.totalWeightedPublications,
+    frq
+  );
   
-  const total = puResult.score + qpScore + iprScore + fpppScore;
+  // IPR and Patents (IPR) - 15 marks
+  const iprResult = calculateIPR(researchData.patentsGranted, researchData.patentsPublished);
+  
+  // Footprint of Projects and Professional Practice (FPPP) - 10 marks
+  const fpppResult = calculateFPPP(
+    researchData.averageResearchFundingPerFaculty,
+    researchData.averageConsultancyPerFaculty
+  );
+  
+  const total = puResult.score + qpResult.score + iprResult.score + fpppResult.score;
   
   return {
     pu: Math.round(puResult.score * 100) / 100,
     puBreakdown: puResult.breakdown,
-    qp: Math.round(qpScore * 100) / 100,
-    ipr: Math.round(iprScore * 100) / 100,
-    fppp: Math.round(fpppScore * 100) / 100,
+    qp: Math.round(qpResult.score * 100) / 100,
+    qpBreakdown: qpResult.breakdown,
+    ipr: Math.round(iprResult.score * 100) / 100,
+    iprBreakdown: iprResult.breakdown,
+    fppp: Math.round(fpppResult.score * 100) / 100,
+    fpppBreakdown: fpppResult.breakdown,
     total: Math.round(total * 100) / 100
   };
 };
