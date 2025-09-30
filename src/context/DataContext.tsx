@@ -107,6 +107,19 @@ const initialData: NIRFData = {
     sociallyBackward: 0
   },
   perception: {
+    // Perception fields - Updated for NIRF calculation
+    academicPeerSurveyResponses: 0,
+    academicPeerRatingAverage: 0,
+    academicReputationScore: 0,
+    employerSurveyResponses: 0,
+    employerRatingAverage: 0,
+    industryReputationScore: 0,
+    alumniFeedbackScore: 0,
+    stakeholderPerceptionScore: 0,
+    mediaVisibilityScore: 0,
+    publicPerceptionRating: 0,
+    
+    // Legacy fields
     academicPeerScore: 0,
     employerScore: 0,
     publicationImpact: 0

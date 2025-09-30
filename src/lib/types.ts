@@ -120,6 +120,25 @@ export interface OutreachData {
 }
 
 export interface PerceptionData {
+  // Academic Peer Perception
+  academicPeerSurveyResponses: number; // Number of academic peer survey responses
+  academicPeerRatingAverage: number; // Average rating from academic peers (1-10 scale)
+  academicReputationScore: number; // Academic reputation score from surveys
+  
+  // Employer Perception
+  employerSurveyResponses: number; // Number of employer survey responses
+  employerRatingAverage: number; // Average rating from employers (1-10 scale)
+  industryReputationScore: number; // Industry reputation score
+  
+  // Alumni and Stakeholder Feedback
+  alumniFeedbackScore: number; // Alumni satisfaction and feedback score
+  stakeholderPerceptionScore: number; // External stakeholder perception score
+  
+  // Media and Public Perception
+  mediaVisibilityScore: number; // Media coverage and visibility score
+  publicPerceptionRating: number; // General public perception rating
+  
+  // Legacy fields for backward compatibility
   academicPeerScore: number;
   employerScore: number;
   publicationImpact: number;
@@ -264,7 +283,20 @@ export interface CalculatedScores {
     };
     total: number;
   };
-  perception: number;
+  perception: {
+    academicPeerComponent: number;
+    employerComponent: number;
+    stakeholderComponent: number;
+    publicPerceptionComponent: number;
+    total: number;
+    breakdown: {
+      academicPeerWeight: number;
+      employerWeight: number;
+      stakeholderWeight: number;
+      publicWeight: number;
+      weightedTotal: number;
+    };
+  };
   finalScore: number;
 }
 

@@ -21,6 +21,7 @@ import TLRForm from '../components/forms/TLRForm';
 import ResearchForm from '../components/forms/ResearchForm';
 import GraduationForm from '../components/forms/GraduationForm';
 import OutreachForm from '../components/forms/OutreachForm';
+import PerceptionForm from '../components/forms/PerceptionForm';
 import ResultsDashboard from '../components/ResultsDashboard';
 
 const Dashboard: React.FC = () => {
@@ -75,7 +76,7 @@ const Dashboard: React.FC = () => {
       id: 'perception',
       name: 'Perception',
       icon: Eye,
-      score: scores.perception,
+      score: scores.perception.total,
       maxScore: 100,
       weight: 10,
       completed: completionStatus.perception,
@@ -232,15 +233,7 @@ const Dashboard: React.FC = () => {
           </TabsContent>
 
           <TabsContent value="perception">
-            <Card>
-              <CardHeader>
-                <CardTitle>Perception</CardTitle>
-                <CardDescription>Peer and employer perception metrics</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-500">Perception form will be implemented here.</p>
-              </CardContent>
-            </Card>
+            <PerceptionForm />
           </TabsContent>
         </Tabs>
       </div>

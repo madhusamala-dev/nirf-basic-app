@@ -1,4 +1,4 @@
-import { TLRData, ResearchData, GraduationData, OutreachData, NIRFData, CalculatedScores } from './types';
+import { TLRData, ResearchData, GraduationData, OutreachData, PerceptionData, NIRFData, CalculatedScores } from './types';
 
 // Placeholder functions for NIRF-determined calculations
 // These would be replaced with actual NIRF formulas when available
@@ -438,6 +438,42 @@ const calculatePCS = (
   };
 };
 
+// NIRF Perception calculation
+const calculatePerception = (perceptionData: PerceptionData): CalculatedScores['perception'] => {
+  // Academic Peer Component (40% weight)
+  const academicPeerNormalized = Math.min(1, (perceptionData.academicPeerRatingAverage / 10) * (perceptionData.academicReputationScore / 100));
+  const academicPeerComponent = 40 * academicPeerNormalized;
+  
+  // Employer Component (35% weight)
+  const employerNormalized = Math.min(1, (perceptionData.employerRatingAverage / 10) * (perceptionData.industryReputationScore / 100));
+  const employerComponent = 35 * employerNormalized;
+  
+  // Stakeholder Component (15% weight)
+  const stakeholderNormalized = Math.min(1, (perceptionData.alumniFeedbackScore / 100) * (perceptionData.stakeholderPerceptionScore / 100));
+  const stakeholderComponent = 15 * stakeholderNormalized;
+  
+  // Public Perception Component (10% weight)
+  const publicNormalized = Math.min(1, (perceptionData.mediaVisibilityScore / 100) * (perceptionData.publicPerceptionRating / 10));
+  const publicPerceptionComponent = 10 * publicNormalized;
+  
+  const total = academicPeerComponent + employerComponent + stakeholderComponent + publicPerceptionComponent;
+  
+  return {
+    academicPeerComponent: Math.round(academicPeerComponent * 100) / 100,
+    employerComponent: Math.round(employerComponent * 100) / 100,
+    stakeholderComponent: Math.round(stakeholderComponent * 100) / 100,
+    publicPerceptionComponent: Math.round(publicPerceptionComponent * 100) / 100,
+    total: Math.round(total * 100) / 100,
+    breakdown: {
+      academicPeerWeight: 40,
+      employerWeight: 35,
+      stakeholderWeight: 15,
+      publicWeight: 10,
+      weightedTotal: Math.round(total * 100) / 100
+    }
+  };
+};
+
 export const calculateTLRScores = (data: TLRData): CalculatedScores['tlr'] => {
   // Student Strength (SS) - 20 marks
   // SS = f(NT, NE) × 15 + f(NP) × 5
@@ -593,19 +629,17 @@ export const calculateFinalScore = (data: NIRFData): CalculatedScores => {
   const researchScores = calculateResearchScores(data.research, data.tlr);
   const graduationScores = calculateGraduationScores(data.graduation);
   const outreachScores = calculateOutreachScores(data.outreach);
-  
-  // Simplified calculation for perception section (would need actual formulas)
-  const perceptionScore = Math.min(100, (data.perception.academicPeerScore * 0.4 + data.perception.employerScore * 0.4 + data.perception.publicationImpact * 0.2));
+  const perceptionScores = calculatePerception(data.perception);
 
   // Apply weightages: TLR(30%), Research(30%), Graduation(20%), Outreach(10%), Perception(10%)
-  const finalScore = (tlrScores.total * 0.30) + (researchScores.total * 0.30) + (graduationScores.total * 0.20) + (outreachScores.total * 0.10) + (perceptionScore * 0.10);
+  const finalScore = (tlrScores.total * 0.30) + (researchScores.total * 0.30) + (graduationScores.total * 0.20) + (outreachScores.total * 0.10) + (perceptionScores.total * 0.10);
 
   return {
     tlr: tlrScores,
     research: researchScores,
     graduation: graduationScores,
     outreach: outreachScores,
-    perception: Math.round(perceptionScore * 100) / 100,
+    perception: perceptionScores,
     finalScore: Math.round(finalScore * 100) / 100
   };
 };
