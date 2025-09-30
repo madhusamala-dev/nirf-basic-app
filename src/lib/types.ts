@@ -25,7 +25,23 @@ export interface TLRData {
   facultyExperienceAbove15: number; // Faculty with >15 years experience
   experiencedFaculty: number; // Keep for backward compatibility
   
-  // Financial Resources Utilization (FRU)
+  // Financial Resources Utilization (FRU) - Updated with NIRF formula fields
+  // Capital Expenditure for previous 3 years (excluding new building construction)
+  capitalExpenditureYear1: number; // Most recent year
+  capitalExpenditureYear2: number; // Second year
+  capitalExpenditureYear3: number; // Third year
+  
+  // Operational/Recurring Expenditure for previous 3 years (excluding hostel maintenance)
+  operationalExpenditureYear1: number; // Most recent year
+  operationalExpenditureYear2: number; // Second year
+  operationalExpenditureYear3: number; // Third year
+  
+  // Engineering students for previous 3 years
+  engineeringStudentsYear1: number; // Most recent year
+  engineeringStudentsYear2: number; // Second year
+  engineeringStudentsYear3: number; // Third year
+  
+  // Legacy fields for backward compatibility
   financialResources: number;
   resourceUtilization: number;
 }
@@ -92,6 +108,13 @@ export interface CalculatedScores {
       total: number;
     };
     fru: number;
+    fruBreakdown: {
+      bc: number; // Average capital expenditure per student
+      bo: number; // Average operational expenditure per student
+      fBc: number; // Scaling function result for BC
+      fBo: number; // Scaling function result for BO
+      total: number;
+    };
     total: number;
   };
   research: number;

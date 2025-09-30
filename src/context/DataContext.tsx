@@ -33,7 +33,18 @@ const initialData: NIRFData = {
     facultyExperienceAbove15: 0,
     experiencedFaculty: 0,
     
-    // Financial fields
+    // Financial Resources Utilization fields - Updated for FRU calculation
+    capitalExpenditureYear1: 0,
+    capitalExpenditureYear2: 0,
+    capitalExpenditureYear3: 0,
+    operationalExpenditureYear1: 0,
+    operationalExpenditureYear2: 0,
+    operationalExpenditureYear3: 0,
+    engineeringStudentsYear1: 0,
+    engineeringStudentsYear2: 0,
+    engineeringStudentsYear3: 0,
+    
+    // Legacy fields
     financialResources: 0,
     resourceUtilization: 0
   },

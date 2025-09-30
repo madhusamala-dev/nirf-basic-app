@@ -110,6 +110,43 @@ const calculateFQE = (
   };
 };
 
+// NIRF Financial Resources Utilization calculation
+const calculateFRU = (
+  capitalExp1: number, capitalExp2: number, capitalExp3: number,
+  operationalExp1: number, operationalExp2: number, operationalExp3: number,
+  students1: number, students2: number, students3: number
+): { score: number; breakdown: CalculatedScores['tlr']['fruBreakdown'] } => {
+  
+  // Calculate average capital expenditure per student (BC)
+  const totalCapitalExp = capitalExp1 + capitalExp2 + capitalExp3;
+  const totalStudents = students1 + students2 + students3;
+  const bc = totalStudents > 0 ? totalCapitalExp / totalStudents : 0;
+  
+  // Calculate average operational expenditure per student (BO)
+  const totalOperationalExp = operationalExp1 + operationalExp2 + operationalExp3;
+  const bo = totalStudents > 0 ? totalOperationalExp / totalStudents : 0;
+  
+  // Apply scaling functions f(BC) and f(BO)
+  // These are placeholder functions - actual NIRF scaling functions would be used
+  // Assuming linear scaling with caps for now
+  const fBc = Math.min(1, bc / 100000); // Assuming 1 lakh per student gives full marks for capital
+  const fBo = Math.min(1, bo / 50000);  // Assuming 50k per student gives full marks for operational
+  
+  // FRU = 7.5×f(BC) + 22.5×f(BO)
+  const fruScore = Math.min(30, 7.5 * fBc + 22.5 * fBo);
+  
+  return {
+    score: fruScore,
+    breakdown: {
+      bc: Math.round(bc * 100) / 100,
+      bo: Math.round(bo * 100) / 100,
+      fBc: Math.round(fBc * 1000) / 1000,
+      fBo: Math.round(fBo * 1000) / 1000,
+      total: Math.round(fruScore * 100) / 100
+    }
+  };
+};
+
 export const calculateTLRScores = (data: TLRData): CalculatedScores['tlr'] => {
   // Student Strength (SS) - 20 marks
   // SS = f(NT, NE) × 15 + f(NP) × 5
@@ -131,10 +168,13 @@ export const calculateTLRScores = (data: TLRData): CalculatedScores['tlr'] => {
   );
 
   // Financial Resources Utilization (FRU) - 30 marks
-  const utilizationRate = data.financialResources > 0 ? (data.resourceUtilization / data.financialResources) * 100 : 0;
-  const fruScore = Math.min(30, utilizationRate / 3.33);
+  const fruResult = calculateFRU(
+    data.capitalExpenditureYear1, data.capitalExpenditureYear2, data.capitalExpenditureYear3,
+    data.operationalExpenditureYear1, data.operationalExpenditureYear2, data.operationalExpenditureYear3,
+    data.engineeringStudentsYear1, data.engineeringStudentsYear2, data.engineeringStudentsYear3
+  );
 
-  const total = ssScore + fsrResult.score + fqeResult.score + fruScore;
+  const total = ssScore + fsrResult.score + fqeResult.score + fruResult.score;
 
   return {
     ss: Math.round(ssScore * 100) / 100,
@@ -151,7 +191,8 @@ export const calculateTLRScores = (data: TLRData): CalculatedScores['tlr'] => {
     },
     fqe: Math.round(fqeResult.score * 100) / 100,
     fqeBreakdown: fqeResult.breakdown,
-    fru: Math.round(fruScore * 100) / 100,
+    fru: Math.round(fruResult.score * 100) / 100,
+    fruBreakdown: fruResult.breakdown,
     total: Math.round(total * 100) / 100
   };
 };

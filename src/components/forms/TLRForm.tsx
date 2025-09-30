@@ -18,6 +18,15 @@ const TLRForm: React.FC = () => {
     updateTLR({ [field]: numValue });
   };
 
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
   const sections = [
     {
       title: 'Student Strength (SS)',
@@ -102,12 +111,70 @@ const TLRForm: React.FC = () => {
     },
     {
       title: 'Financial Resources Utilization (FRU)',
-      description: 'Financial resources and their utilization',
+      description: 'Financial expenditure analysis for engineering discipline over previous 3 years',
       maxMarks: 30,
       score: tlrScores.fru,
       fields: [
-        { key: 'financialResources' as const, label: 'Total Financial Resources (₹ Lakhs)', value: tlr.financialResources, description: 'Total financial resources available' },
-        { key: 'resourceUtilization' as const, label: 'Resource Utilization (₹ Lakhs)', value: tlr.resourceUtilization, description: 'Amount of resources actually utilized' }
+        // Capital Expenditure fields
+        { 
+          key: 'capitalExpenditureYear1' as const, 
+          label: 'Capital Expenditure - Year 1 (₹)', 
+          value: tlr.capitalExpenditureYear1, 
+          description: 'Capital expenditure for most recent year (excluding new building construction)'
+        },
+        { 
+          key: 'capitalExpenditureYear2' as const, 
+          label: 'Capital Expenditure - Year 2 (₹)', 
+          value: tlr.capitalExpenditureYear2, 
+          description: 'Capital expenditure for second year (excluding new building construction)'
+        },
+        { 
+          key: 'capitalExpenditureYear3' as const, 
+          label: 'Capital Expenditure - Year 3 (₹)', 
+          value: tlr.capitalExpenditureYear3, 
+          description: 'Capital expenditure for third year (excluding new building construction)'
+        },
+        // Operational Expenditure fields
+        { 
+          key: 'operationalExpenditureYear1' as const, 
+          label: 'Operational Expenditure - Year 1 (₹)', 
+          value: tlr.operationalExpenditureYear1, 
+          description: 'Operational/recurring expenditure for most recent year (excluding hostel maintenance)'
+        },
+        { 
+          key: 'operationalExpenditureYear2' as const, 
+          label: 'Operational Expenditure - Year 2 (₹)', 
+          value: tlr.operationalExpenditureYear2, 
+          description: 'Operational/recurring expenditure for second year (excluding hostel maintenance)'
+        },
+        { 
+          key: 'operationalExpenditureYear3' as const, 
+          label: 'Operational Expenditure - Year 3 (₹)', 
+          value: tlr.operationalExpenditureYear3, 
+          description: 'Operational/recurring expenditure for third year (excluding hostel maintenance)'
+        },
+        // Engineering Students fields
+        { 
+          key: 'engineeringStudentsYear1' as const, 
+          label: 'Engineering Students - Year 1', 
+          value: tlr.engineeringStudentsYear1, 
+          description: 'Total engineering discipline students for most recent year'
+        },
+        { 
+          key: 'engineeringStudentsYear2' as const, 
+          label: 'Engineering Students - Year 2', 
+          value: tlr.engineeringStudentsYear2, 
+          description: 'Total engineering discipline students for second year'
+        },
+        { 
+          key: 'engineeringStudentsYear3' as const, 
+          label: 'Engineering Students - Year 3', 
+          value: tlr.engineeringStudentsYear3, 
+          description: 'Total engineering discipline students for third year'
+        },
+        // Legacy fields
+        { key: 'financialResources' as const, label: 'Total Financial Resources (Legacy)', value: tlr.financialResources, description: 'Legacy field for backward compatibility' },
+        { key: 'resourceUtilization' as const, label: 'Resource Utilization (Legacy)', value: tlr.resourceUtilization, description: 'Legacy field for backward compatibility' }
       ]
     }
   ];
@@ -150,7 +217,7 @@ const TLRForm: React.FC = () => {
                       id={field.key}
                       type="number"
                       min="0"
-                      step="1"
+                      step={field.key.includes('Expenditure') ? "1000" : "1"}
                       value={field.value || ''}
                       onChange={(e) => handleInputChange(field.key, e.target.value)}
                       placeholder="Enter value"
@@ -268,6 +335,48 @@ const TLRForm: React.FC = () => {
                     <Info className="h-4 w-4" />
                     <AlertDescription>
                       <strong>Optimal Distribution:</strong> Equal distribution (1:1:1) across experience ranges yields maximum experience score. Ph.D. percentage ≥95% yields maximum quality score.
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              )}
+
+              {/* Show FRU breakdown */}
+              {index === 3 && (
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <h4 className="font-medium text-sm mb-3">Financial Resources Utilization Assessment:</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm mb-4">
+                    <div className="bg-blue-50 p-3 rounded">
+                      <div className="font-medium">Capital Expenditure per Student (BC)</div>
+                      <div className="text-blue-600 font-bold">{formatCurrency(tlrScores.fruBreakdown.bc)}</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        3-year average (excluding building construction)
+                      </div>
+                    </div>
+                    <div className="bg-green-50 p-3 rounded">
+                      <div className="font-medium">Operational Expenditure per Student (BO)</div>
+                      <div className="text-green-600 font-bold">{formatCurrency(tlrScores.fruBreakdown.bo)}</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        3-year average (excluding hostel maintenance)
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-gray-50 p-3 rounded mb-3">
+                    <div className="font-medium text-sm mb-2">FRU Score Breakdown:</div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <span className="font-medium">Capital Component:</span> {(7.5 * tlrScores.fruBreakdown.fBc).toFixed(2)} marks
+                      </div>
+                      <div>
+                        <span className="font-medium">Operational Component:</span> {(22.5 * tlrScores.fruBreakdown.fBo).toFixed(2)} marks
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <Alert className="mt-3">
+                    <Info className="h-4 w-4" />
+                    <AlertDescription>
+                      <strong>Engineering Discipline Only:</strong> Include expenditure and student count for engineering programs only. Exclude new building construction and hostel maintenance costs.
                     </AlertDescription>
                   </Alert>
                 </div>
