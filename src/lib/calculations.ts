@@ -60,6 +60,56 @@ const calculateFSR = (f: number, nt: number, np: number): { score: number; break
   };
 };
 
+// NIRF Faculty Quality and Experience calculation
+const calculateFQE = (
+  totalFacultyRequired: number,
+  actualFaculty: number,
+  facultyWithPhD: number,
+  faculty0to8: number,
+  faculty8to15: number,
+  facultyAbove15: number
+): { score: number; breakdown: CalculatedScores['tlr']['fqeBreakdown'] } => {
+  
+  // Calculate FRA: Percentage of Faculty with Ph.D. with respect to total faculty required or actual faculty (whichever is higher)
+  const higherFacultyCount = Math.max(totalFacultyRequired, actualFaculty);
+  const fra = higherFacultyCount > 0 ? (facultyWithPhD / higherFacultyCount) * 100 : 0;
+  
+  // Calculate FQ
+  let fq = 0;
+  if (fra >= 95) {
+    fq = 10;
+  } else {
+    fq = 10 * (fra / 95);
+  }
+  
+  // Calculate experience fractions
+  const totalExperienceFaculty = faculty0to8 + faculty8to15 + facultyAbove15;
+  const f1 = totalExperienceFaculty > 0 ? faculty0to8 / totalExperienceFaculty : 0;
+  const f2 = totalExperienceFaculty > 0 ? faculty8to15 / totalExperienceFaculty : 0;
+  const f3 = totalExperienceFaculty > 0 ? facultyAbove15 / totalExperienceFaculty : 0;
+  
+  // Calculate FE: FE = 3min(3F1, 1) + 3 min(3F2, 1) + 4 min(3F3, 1)
+  const fe = 3 * Math.min(3 * f1, 1) + 3 * Math.min(3 * f2, 1) + 4 * Math.min(3 * f3, 1);
+  
+  // FQE = FQ + FE
+  const fqeScore = Math.min(20, fq + fe);
+  
+  return {
+    score: fqeScore,
+    breakdown: {
+      fq: Math.round(fq * 100) / 100,
+      fe: Math.round(fe * 100) / 100,
+      fra: Math.round(fra * 100) / 100,
+      experienceDistribution: {
+        f1: Math.round(f1 * 1000) / 1000,
+        f2: Math.round(f2 * 1000) / 1000,
+        f3: Math.round(f3 * 1000) / 1000
+      },
+      total: Math.round(fqeScore * 100) / 100
+    }
+  };
+};
+
 export const calculateTLRScores = (data: TLRData): CalculatedScores['tlr'] => {
   // Student Strength (SS) - 20 marks
   // SS = f(NT, NE) × 15 + f(NP) × 5
@@ -71,15 +121,20 @@ export const calculateTLRScores = (data: TLRData): CalculatedScores['tlr'] => {
   const fsrResult = calculateFSR(data.fullTimeRegularFaculty, data.totalSanctionedIntake, data.doctoralStudents);
 
   // Faculty Quality & Experience (FQE) - 20 marks
-  const phdPercentage = data.totalFaculty > 0 ? (data.facultyWithPhD / data.totalFaculty) * 100 : 0;
-  const experiencePercentage = data.totalFaculty > 0 ? (data.experiencedFaculty / data.totalFaculty) * 100 : 0;
-  const fqeScore = Math.min(20, (phdPercentage * 0.6 + experiencePercentage * 0.4) / 5);
+  const fqeResult = calculateFQE(
+    data.totalFacultyRequired,
+    data.totalFaculty,
+    data.facultyWithPhD,
+    data.facultyExperience0to8,
+    data.facultyExperience8to15,
+    data.facultyExperienceAbove15
+  );
 
   // Financial Resources Utilization (FRU) - 30 marks
   const utilizationRate = data.financialResources > 0 ? (data.resourceUtilization / data.financialResources) * 100 : 0;
   const fruScore = Math.min(30, utilizationRate / 3.33);
 
-  const total = ssScore + fsrResult.score + fqeScore + fruScore;
+  const total = ssScore + fsrResult.score + fqeResult.score + fruScore;
 
   return {
     ss: Math.round(ssScore * 100) / 100,
@@ -94,7 +149,8 @@ export const calculateTLRScores = (data: TLRData): CalculatedScores['tlr'] => {
       totalStudents: fsrResult.breakdown.totalStudents,
       isValidRatio: fsrResult.breakdown.isValidRatio
     },
-    fqe: Math.round(fqeScore * 100) / 100,
+    fqe: Math.round(fqeResult.score * 100) / 100,
+    fqeBreakdown: fqeResult.breakdown,
     fru: Math.round(fruScore * 100) / 100,
     total: Math.round(total * 100) / 100
   };

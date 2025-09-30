@@ -17,9 +17,13 @@ export interface TLRData {
   totalFaculty: number; // Keep for backward compatibility
   permanentFaculty: number; // Keep for backward compatibility
   
-  // Faculty Quality & Experience (FQE)
-  facultyWithPhD: number;
-  experiencedFaculty: number;
+  // Faculty Quality & Experience (FQE) - Updated with NIRF formula fields
+  totalFacultyRequired: number; // Total faculty required
+  facultyWithPhD: number; // Faculty with Ph.D. or equivalent
+  facultyExperience0to8: number; // Faculty with 0-8 years experience
+  facultyExperience8to15: number; // Faculty with 8-15 years experience
+  facultyExperienceAbove15: number; // Faculty with >15 years experience
+  experiencedFaculty: number; // Keep for backward compatibility
   
   // Financial Resources Utilization (FRU)
   financialResources: number;
@@ -76,6 +80,17 @@ export interface CalculatedScores {
       isValidRatio: boolean;
     };
     fqe: number;
+    fqeBreakdown: {
+      fq: number;
+      fe: number;
+      fra: number;
+      experienceDistribution: {
+        f1: number;
+        f2: number;
+        f3: number;
+      };
+      total: number;
+    };
     fru: number;
     total: number;
   };

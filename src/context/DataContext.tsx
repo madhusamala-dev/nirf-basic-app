@@ -24,7 +24,13 @@ const initialData: NIRFData = {
     fullTimeRegularFaculty: 0,
     totalFaculty: 0,
     permanentFaculty: 0,
+    
+    // Faculty Quality & Experience fields - Updated for FQE calculation
+    totalFacultyRequired: 0,
     facultyWithPhD: 0,
+    facultyExperience0to8: 0,
+    facultyExperience8to15: 0,
+    facultyExperienceAbove15: 0,
     experiencedFaculty: 0,
     
     // Financial fields

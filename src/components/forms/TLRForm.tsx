@@ -63,12 +63,41 @@ const TLRForm: React.FC = () => {
     },
     {
       title: 'Faculty Quality & Experience (FQE)',
-      description: 'Faculty with PhD and Experience',
+      description: 'Faculty qualifications and experience distribution',
       maxMarks: 20,
       score: tlrScores.fqe,
       fields: [
-        { key: 'facultyWithPhD' as const, label: 'Faculty with PhD', value: tlr.facultyWithPhD, description: 'Number of faculty with PhD qualification' },
-        { key: 'experiencedFaculty' as const, label: 'Experienced Faculty (>5 years)', value: tlr.experiencedFaculty, description: 'Number of faculty with more than 5 years experience' }
+        { 
+          key: 'totalFacultyRequired' as const, 
+          label: 'Total Faculty Required', 
+          value: tlr.totalFacultyRequired, 
+          description: 'Total number of faculty positions required by the institution'
+        },
+        { 
+          key: 'facultyWithPhD' as const, 
+          label: 'Faculty with Ph.D. (or equivalent)', 
+          value: tlr.facultyWithPhD, 
+          description: 'Number of faculty with Ph.D. or equivalent qualification'
+        },
+        { 
+          key: 'facultyExperience0to8' as const, 
+          label: 'Faculty with 0-8 Years Experience', 
+          value: tlr.facultyExperience0to8, 
+          description: 'Number of faculty with experience up to 8 years'
+        },
+        { 
+          key: 'facultyExperience8to15' as const, 
+          label: 'Faculty with 8-15 Years Experience', 
+          value: tlr.facultyExperience8to15, 
+          description: 'Number of faculty with experience between 8 to 15 years'
+        },
+        { 
+          key: 'facultyExperienceAbove15' as const, 
+          label: 'Faculty with 15+ Years Experience', 
+          value: tlr.facultyExperienceAbove15, 
+          description: 'Number of faculty with experience more than 15 years'
+        },
+        { key: 'experiencedFaculty' as const, label: 'Experienced Faculty (Legacy)', value: tlr.experiencedFaculty, description: 'Legacy field for backward compatibility' }
       ]
     },
     {
@@ -194,6 +223,51 @@ const TLRForm: React.FC = () => {
                     <Info className="h-4 w-4" />
                     <AlertDescription>
                       <strong>Faculty Criteria:</strong> Only faculty with Ph.D./Master's degrees who taught in both semesters of AY 2023-24 are counted. Optimal ratio is 1:15 for maximum marks.
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              )}
+
+              {/* Show FQE breakdown */}
+              {index === 2 && (
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <h4 className="font-medium text-sm mb-3">Faculty Quality & Experience Assessment:</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm mb-4">
+                    <div className="bg-blue-50 p-3 rounded">
+                      <div className="font-medium">Faculty Quality (FQ)</div>
+                      <div className="text-blue-600 font-bold">{tlrScores.fqeBreakdown.fq.toFixed(2)}/10</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        Ph.D. Percentage: {tlrScores.fqeBreakdown.fra.toFixed(1)}%
+                      </div>
+                    </div>
+                    <div className="bg-green-50 p-3 rounded">
+                      <div className="font-medium">Faculty Experience (FE)</div>
+                      <div className="text-green-600 font-bold">{tlrScores.fqeBreakdown.fe.toFixed(2)}/10</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        Experience distribution considered
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-gray-50 p-3 rounded mb-3">
+                    <div className="font-medium text-sm mb-2">Experience Distribution:</div>
+                    <div className="grid grid-cols-3 gap-2 text-xs">
+                      <div>
+                        <span className="font-medium">0-8 years:</span> {(tlrScores.fqeBreakdown.experienceDistribution.f1 * 100).toFixed(1)}%
+                      </div>
+                      <div>
+                        <span className="font-medium">8-15 years:</span> {(tlrScores.fqeBreakdown.experienceDistribution.f2 * 100).toFixed(1)}%
+                      </div>
+                      <div>
+                        <span className="font-medium">15+ years:</span> {(tlrScores.fqeBreakdown.experienceDistribution.f3 * 100).toFixed(1)}%
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <Alert className="mt-3">
+                    <Info className="h-4 w-4" />
+                    <AlertDescription>
+                      <strong>Optimal Distribution:</strong> Equal distribution (1:1:1) across experience ranges yields maximum experience score. Ph.D. percentage ≥95% yields maximum quality score.
                     </AlertDescription>
                   </Alert>
                 </div>
