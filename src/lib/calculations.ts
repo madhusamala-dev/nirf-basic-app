@@ -1,27 +1,49 @@
 import { TLRData, NIRFData, CalculatedScores } from './types';
 
+// Placeholder functions for NIRF-determined calculations
+// These would be replaced with actual NIRF formulas when available
+const calculateFNtNe = (nt: number, ne: number): number => {
+  if (nt === 0) return 0;
+  // Placeholder: Enrollment efficiency ratio normalized to 0-1 scale
+  const enrollmentRatio = Math.min(ne / nt, 1.2); // Allow up to 120% enrollment
+  return Math.min(enrollmentRatio, 1); // Cap at 1 for the function value
+};
+
+const calculateFNp = (np: number): number => {
+  // Placeholder: Normalize doctoral students count
+  // Assuming institutions with 100+ doctoral students get maximum score
+  return Math.min(np / 100, 1);
+};
+
 export const calculateTLRScores = (data: TLRData): CalculatedScores['tlr'] => {
   // Student Strength (SS) - 20 marks
-  const totalStudents = data.studentStrength + data.doctoralStudents;
-  const ssScore = Math.min(20, (totalStudents / 1000) * 10); // Example calculation
+  // SS = f(NT, NE) × 15 + f(NP) × 5
+  const fNtNe = calculateFNtNe(data.totalSanctionedIntake, data.totalEnrolledStudents);
+  const fNp = calculateFNp(data.doctoralStudents);
+  const ssScore = (fNtNe * 15) + (fNp * 5);
 
   // Faculty-Student Ratio (FSR) - 30 marks
-  const facultyStudentRatio = data.permanentFaculty / data.studentStrength;
+  const facultyStudentRatio = data.permanentFaculty / data.totalEnrolledStudents;
   const fsrScore = Math.min(30, facultyStudentRatio * 100); // Example calculation
 
   // Faculty Quality & Experience (FQE) - 20 marks
-  const phdPercentage = (data.facultyWithPhD / data.totalFaculty) * 100;
-  const experiencePercentage = (data.experiencedFaculty / data.totalFaculty) * 100;
+  const phdPercentage = data.totalFaculty > 0 ? (data.facultyWithPhD / data.totalFaculty) * 100 : 0;
+  const experiencePercentage = data.totalFaculty > 0 ? (data.experiencedFaculty / data.totalFaculty) * 100 : 0;
   const fqeScore = Math.min(20, (phdPercentage * 0.6 + experiencePercentage * 0.4) / 5);
 
   // Financial Resources Utilization (FRU) - 30 marks
-  const utilizationRate = (data.resourceUtilization / data.financialResources) * 100;
+  const utilizationRate = data.financialResources > 0 ? (data.resourceUtilization / data.financialResources) * 100 : 0;
   const fruScore = Math.min(30, utilizationRate / 3.33);
 
   const total = ssScore + fsrScore + fqeScore + fruScore;
 
   return {
     ss: Math.round(ssScore * 100) / 100,
+    ssBreakdown: {
+      fNtNe: Math.round(fNtNe * 1000) / 1000,
+      fNp: Math.round(fNp * 1000) / 1000,
+      total: Math.round(ssScore * 100) / 100
+    },
     fsr: Math.round(fsrScore * 100) / 100,
     fqe: Math.round(fqeScore * 100) / 100,
     fru: Math.round(fruScore * 100) / 100,

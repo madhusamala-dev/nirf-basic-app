@@ -7,12 +7,20 @@ export interface College {
 export type CollegeCategory = 'overall' | 'engineering' | 'management' | 'pharmacy' | 'medical' | 'law';
 
 export interface TLRData {
-  studentStrength: number;
-  doctoralStudents: number;
+  // Student Strength (SS) - Updated with NIRF formula fields
+  totalSanctionedIntake: number; // NT
+  totalEnrolledStudents: number; // NE
+  doctoralStudents: number; // NP
+  
+  // Faculty-Student Ratio (FSR)
   totalFaculty: number;
   permanentFaculty: number;
+  
+  // Faculty Quality & Experience (FQE)
   facultyWithPhD: number;
   experiencedFaculty: number;
+  
+  // Financial Resources Utilization (FRU)
   financialResources: number;
   resourceUtilization: number;
 }
@@ -55,6 +63,11 @@ export interface NIRFData {
 export interface CalculatedScores {
   tlr: {
     ss: number;
+    ssBreakdown: {
+      fNtNe: number;
+      fNp: number;
+      total: number;
+    };
     fsr: number;
     fqe: number;
     fru: number;

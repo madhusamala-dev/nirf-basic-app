@@ -15,12 +15,18 @@ interface DataContextType {
 
 const initialData: NIRFData = {
   tlr: {
-    studentStrength: 0,
+    // Updated Student Strength fields
+    totalSanctionedIntake: 0,
+    totalEnrolledStudents: 0,
     doctoralStudents: 0,
+    
+    // Faculty fields
     totalFaculty: 0,
     permanentFaculty: 0,
     facultyWithPhD: 0,
     experiencedFaculty: 0,
+    
+    // Financial fields
     financialResources: 0,
     resourceUtilization: 0
   },

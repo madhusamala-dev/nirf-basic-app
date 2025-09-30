@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 import { useData } from '../../context/DataContext';
 
 const TLRForm: React.FC = () => {
@@ -18,12 +19,28 @@ const TLRForm: React.FC = () => {
   const sections = [
     {
       title: 'Student Strength (SS)',
-      description: 'Including Doctoral Students',
+      description: 'SS = f(NT, NE) × 15 + f(NP) × 5',
       maxMarks: 20,
       score: tlrScores.ss,
       fields: [
-        { key: 'studentStrength' as const, label: 'Total Students', value: tlr.studentStrength },
-        { key: 'doctoralStudents' as const, label: 'Doctoral Students', value: tlr.doctoralStudents }
+        { 
+          key: 'totalSanctionedIntake' as const, 
+          label: 'Total Sanctioned Approved Intake (NT)', 
+          value: tlr.totalSanctionedIntake,
+          description: 'Total sanctioned approved intake considering all UG and PG programs'
+        },
+        { 
+          key: 'totalEnrolledStudents' as const, 
+          label: 'Total Enrolled Students (NE)', 
+          value: tlr.totalEnrolledStudents,
+          description: 'Total number of students enrolled considering all UG and PG programs'
+        },
+        { 
+          key: 'doctoralStudents' as const, 
+          label: 'Doctoral Students (NP)', 
+          value: tlr.doctoralStudents,
+          description: 'Total number of students enrolled for doctoral program till previous academic year'
+        }
       ]
     },
     {
@@ -32,8 +49,8 @@ const TLRForm: React.FC = () => {
       maxMarks: 30,
       score: tlrScores.fsr,
       fields: [
-        { key: 'totalFaculty' as const, label: 'Total Faculty', value: tlr.totalFaculty },
-        { key: 'permanentFaculty' as const, label: 'Permanent Faculty', value: tlr.permanentFaculty }
+        { key: 'totalFaculty' as const, label: 'Total Faculty', value: tlr.totalFaculty, description: 'Total number of faculty members' },
+        { key: 'permanentFaculty' as const, label: 'Permanent Faculty', value: tlr.permanentFaculty, description: 'Number of permanent faculty members' }
       ]
     },
     {
@@ -42,8 +59,8 @@ const TLRForm: React.FC = () => {
       maxMarks: 20,
       score: tlrScores.fqe,
       fields: [
-        { key: 'facultyWithPhD' as const, label: 'Faculty with PhD', value: tlr.facultyWithPhD },
-        { key: 'experiencedFaculty' as const, label: 'Experienced Faculty (>5 years)', value: tlr.experiencedFaculty }
+        { key: 'facultyWithPhD' as const, label: 'Faculty with PhD', value: tlr.facultyWithPhD, description: 'Number of faculty with PhD qualification' },
+        { key: 'experiencedFaculty' as const, label: 'Experienced Faculty (>5 years)', value: tlr.experiencedFaculty, description: 'Number of faculty with more than 5 years experience' }
       ]
     },
     {
@@ -52,8 +69,8 @@ const TLRForm: React.FC = () => {
       maxMarks: 30,
       score: tlrScores.fru,
       fields: [
-        { key: 'financialResources' as const, label: 'Total Financial Resources (₹ Lakhs)', value: tlr.financialResources },
-        { key: 'resourceUtilization' as const, label: 'Resource Utilization (₹ Lakhs)', value: tlr.resourceUtilization }
+        { key: 'financialResources' as const, label: 'Total Financial Resources (₹ Lakhs)', value: tlr.financialResources, description: 'Total financial resources available' },
+        { key: 'resourceUtilization' as const, label: 'Resource Utilization (₹ Lakhs)', value: tlr.resourceUtilization, description: 'Amount of resources actually utilized' }
       ]
     }
   ];
@@ -88,7 +105,7 @@ const TLRForm: React.FC = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid gap-4">
                 {section.fields.map((field) => (
                   <div key={field.key} className="space-y-2">
                     <Label htmlFor={field.key}>{field.label}</Label>
@@ -96,14 +113,39 @@ const TLRForm: React.FC = () => {
                       id={field.key}
                       type="number"
                       min="0"
-                      step="0.01"
+                      step="1"
                       value={field.value || ''}
                       onChange={(e) => handleInputChange(field.key, e.target.value)}
                       placeholder="Enter value"
                     />
+                    <p className="text-xs text-gray-500">{field.description}</p>
                   </div>
                 ))}
               </div>
+              
+              {/* Show SS calculation breakdown */}
+              {index === 0 && (
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <h4 className="font-medium text-sm mb-3">Student Strength Calculation Breakdown:</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                    <div className="bg-blue-50 p-3 rounded">
+                      <div className="font-medium">f(NT, NE) × 15</div>
+                      <div className="text-blue-600">{tlrScores.ssBreakdown.fNtNe.toFixed(3)} × 15 = {(tlrScores.ssBreakdown.fNtNe * 15).toFixed(2)}</div>
+                    </div>
+                    <div className="bg-green-50 p-3 rounded">
+                      <div className="font-medium">f(NP) × 5</div>
+                      <div className="text-green-600">{tlrScores.ssBreakdown.fNp.toFixed(3)} × 5 = {(tlrScores.ssBreakdown.fNp * 5).toFixed(2)}</div>
+                    </div>
+                    <div className="bg-gray-50 p-3 rounded">
+                      <div className="font-medium">Total SS Score</div>
+                      <div className="text-gray-900 font-bold">{tlrScores.ssBreakdown.total.toFixed(2)}/20</div>
+                    </div>
+                  </div>
+                  <div className="mt-2 text-xs text-gray-500">
+                    Note: f(NT, NE) and f(NP) are placeholder functions. Actual NIRF functions will be implemented when available.
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         ))}
@@ -132,11 +174,10 @@ const TLRForm: React.FC = () => {
               <div className="text-sm text-gray-600">FRU Score</div>
             </div>
           </div>
-          <div className="mt-4 pt-4 border-t border-blue-200">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-blue-900">{tlrScores.total.toFixed(2)}/100</div>
-              <div className="text-sm text-gray-600">Total TLR Score</div>
-            </div>
+          <Separator className="my-4" />
+          <div className="text-center">
+            <div className="text-3xl font-bold text-blue-900">{tlrScores.total.toFixed(2)}/100</div>
+            <div className="text-sm text-gray-600">Total TLR Score</div>
           </div>
         </CardContent>
       </Card>
