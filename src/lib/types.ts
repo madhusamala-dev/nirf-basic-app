@@ -12,9 +12,10 @@ export interface TLRData {
   totalEnrolledStudents: number; // NE
   doctoralStudents: number; // NP
   
-  // Faculty-Student Ratio (FSR)
-  totalFaculty: number;
-  permanentFaculty: number;
+  // Faculty-Student Ratio (FSR) - Updated with NIRF formula fields
+  fullTimeRegularFaculty: number; // F - Full-time regular faculty (previous year)
+  totalFaculty: number; // Keep for backward compatibility
+  permanentFaculty: number; // Keep for backward compatibility
   
   // Faculty Quality & Experience (FQE)
   facultyWithPhD: number;
@@ -69,6 +70,11 @@ export interface CalculatedScores {
       total: number;
     };
     fsr: number;
+    fsrBreakdown: {
+      facultyStudentRatio: number;
+      totalStudents: number;
+      isValidRatio: boolean;
+    };
     fqe: number;
     fru: number;
     total: number;

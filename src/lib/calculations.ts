@@ -15,6 +15,51 @@ const calculateFNp = (np: number): number => {
   return Math.min(np / 100, 1);
 };
 
+// NIRF Faculty-Student Ratio calculation
+const calculateFSR = (f: number, nt: number, np: number): { score: number; breakdown: CalculatedScores['tlr']['fsrBreakdown'] } => {
+  // N = NT + NP (Total students = Total sanctioned intake + Doctoral students)
+  const totalStudents = nt + np;
+  
+  if (totalStudents === 0 || f === 0) {
+    return {
+      score: 0,
+      breakdown: {
+        facultyStudentRatio: 0,
+        totalStudents,
+        isValidRatio: false
+      }
+    };
+  }
+
+  // Calculate F/N ratio
+  const facultyStudentRatio = f / totalStudents;
+  
+  // If F/N < 1:50 (0.02), FSR will be set to zero
+  if (facultyStudentRatio < (1/50)) {
+    return {
+      score: 0,
+      breakdown: {
+        facultyStudentRatio,
+        totalStudents,
+        isValidRatio: false
+      }
+    };
+  }
+
+  // FSR = 25 × [15 × (F/N)]
+  // Expected optimal ratio is 1:15 (0.0667) for maximum marks
+  const fsrScore = Math.min(25, 25 * 15 * facultyStudentRatio);
+
+  return {
+    score: fsrScore,
+    breakdown: {
+      facultyStudentRatio,
+      totalStudents,
+      isValidRatio: true
+    }
+  };
+};
+
 export const calculateTLRScores = (data: TLRData): CalculatedScores['tlr'] => {
   // Student Strength (SS) - 20 marks
   // SS = f(NT, NE) × 15 + f(NP) × 5
@@ -23,8 +68,7 @@ export const calculateTLRScores = (data: TLRData): CalculatedScores['tlr'] => {
   const ssScore = (fNtNe * 15) + (fNp * 5);
 
   // Faculty-Student Ratio (FSR) - 30 marks
-  const facultyStudentRatio = data.permanentFaculty / data.totalEnrolledStudents;
-  const fsrScore = Math.min(30, facultyStudentRatio * 100); // Example calculation
+  const fsrResult = calculateFSR(data.fullTimeRegularFaculty, data.totalSanctionedIntake, data.doctoralStudents);
 
   // Faculty Quality & Experience (FQE) - 20 marks
   const phdPercentage = data.totalFaculty > 0 ? (data.facultyWithPhD / data.totalFaculty) * 100 : 0;
@@ -35,7 +79,7 @@ export const calculateTLRScores = (data: TLRData): CalculatedScores['tlr'] => {
   const utilizationRate = data.financialResources > 0 ? (data.resourceUtilization / data.financialResources) * 100 : 0;
   const fruScore = Math.min(30, utilizationRate / 3.33);
 
-  const total = ssScore + fsrScore + fqeScore + fruScore;
+  const total = ssScore + fsrResult.score + fqeScore + fruScore;
 
   return {
     ss: Math.round(ssScore * 100) / 100,
@@ -44,7 +88,12 @@ export const calculateTLRScores = (data: TLRData): CalculatedScores['tlr'] => {
       fNp: Math.round(fNp * 1000) / 1000,
       total: Math.round(ssScore * 100) / 100
     },
-    fsr: Math.round(fsrScore * 100) / 100,
+    fsr: Math.round(fsrResult.score * 100) / 100,
+    fsrBreakdown: {
+      facultyStudentRatio: Math.round(fsrResult.breakdown.facultyStudentRatio * 10000) / 10000,
+      totalStudents: fsrResult.breakdown.totalStudents,
+      isValidRatio: fsrResult.breakdown.isValidRatio
+    },
     fqe: Math.round(fqeScore * 100) / 100,
     fru: Math.round(fruScore * 100) / 100,
     total: Math.round(total * 100) / 100

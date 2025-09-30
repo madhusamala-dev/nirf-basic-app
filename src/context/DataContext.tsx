@@ -15,12 +15,13 @@ interface DataContextType {
 
 const initialData: NIRFData = {
   tlr: {
-    // Updated Student Strength fields
+    // Student Strength fields
     totalSanctionedIntake: 0,
     totalEnrolledStudents: 0,
     doctoralStudents: 0,
     
-    // Faculty fields
+    // Faculty fields - Updated for FSR calculation
+    fullTimeRegularFaculty: 0,
     totalFaculty: 0,
     permanentFaculty: 0,
     facultyWithPhD: 0,
