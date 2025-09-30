@@ -47,6 +47,22 @@ export interface TLRData {
 }
 
 export interface ResearchData {
+  // Publications (PU) - 35 marks
+  totalWeightedPublications: number; // P - weighted publications from third-party sources
+  retractedPublications: number; // Pret - number of retracted publications
+  
+  // Quality of Publications (QP) - 40 marks (placeholder)
+  qualityPublications: number;
+  
+  // IPR and Patents (IPR) - 15 marks (placeholder)
+  patentsPublished: number;
+  patentsGranted: number;
+  
+  // Footprint of Projects and Professional Practice (FPPP) - 10 marks (placeholder)
+  projectsFootprint: number;
+  professionalPractice: number;
+  
+  // Legacy fields for backward compatibility
   publications: number;
   citations: number;
   patents: number;
@@ -117,7 +133,22 @@ export interface CalculatedScores {
     };
     total: number;
   };
-  research: number;
+  research: {
+    pu: number;
+    puBreakdown: {
+      p: number; // Weighted publications
+      pret: number; // Retracted publications
+      frq: number; // Faculty requirement quotient
+      publicationRatio: number; // P/FRQ
+      fPublicationRatio: number; // f(P/FRQ)
+      fRetracted: number; // f(Pret)
+      total: number;
+    };
+    qp: number; // Quality of Publications (placeholder)
+    ipr: number; // IPR and Patents (placeholder)
+    fppp: number; // Footprint of Projects and Professional Practice (placeholder)
+    total: number;
+  };
   graduation: number;
   outreach: number;
   perception: number;

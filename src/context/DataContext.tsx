@@ -49,6 +49,22 @@ const initialData: NIRFData = {
     resourceUtilization: 0
   },
   research: {
+    // Publications (PU) fields - Updated for NIRF calculation
+    totalWeightedPublications: 0,
+    retractedPublications: 0,
+    
+    // Quality of Publications (QP) fields - Placeholder
+    qualityPublications: 0,
+    
+    // IPR and Patents (IPR) fields - Placeholder
+    patentsPublished: 0,
+    patentsGranted: 0,
+    
+    // Footprint of Projects and Professional Practice (FPPP) fields - Placeholder
+    projectsFootprint: 0,
+    professionalPractice: 0,
+    
+    // Legacy fields
     publications: 0,
     citations: 0,
     patents: 0,

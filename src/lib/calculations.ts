@@ -1,4 +1,4 @@
-import { TLRData, NIRFData, CalculatedScores } from './types';
+import { TLRData, ResearchData, NIRFData, CalculatedScores } from './types';
 
 // Placeholder functions for NIRF-determined calculations
 // These would be replaced with actual NIRF formulas when available
@@ -147,6 +147,48 @@ const calculateFRU = (
   };
 };
 
+// Calculate FRQ (Faculty Requirement Quotient) for Research calculations
+const calculateFRQ = (tlrData: TLRData): number => {
+  // FRQ = maximum of (nominal faculty based on 1:15 FSR OR available faculty)
+  const totalStudents = tlrData.totalSanctionedIntake + tlrData.doctoralStudents;
+  const nominalFacultyFor15Ratio = totalStudents / 15; // Required faculty for 1:15 ratio
+  const availableFaculty = tlrData.totalFaculty;
+  
+  return Math.max(nominalFacultyFor15Ratio, availableFaculty);
+};
+
+// NIRF Publications (PU) calculation
+const calculatePU = (
+  totalWeightedPublications: number,
+  retractedPublications: number,
+  frq: number
+): { score: number; breakdown: CalculatedScores['research']['puBreakdown'] } => {
+  
+  // Calculate P/FRQ ratio
+  const publicationRatio = frq > 0 ? totalWeightedPublications / frq : 0;
+  
+  // Apply scaling functions f(P/FRQ) and f(Pret)
+  // These are placeholder functions - actual NIRF scaling functions would be used
+  const fPublicationRatio = Math.min(1, publicationRatio / 10); // Assuming 10 publications per faculty gives full marks
+  const fRetracted = Math.min(1, retractedPublications / 5); // Penalty scaling for retractions
+  
+  // PU = 35 × f(P/FRQ) - 5 × f(Pret)
+  const puScore = Math.max(0, 35 * fPublicationRatio - 5 * fRetracted);
+  
+  return {
+    score: puScore,
+    breakdown: {
+      p: totalWeightedPublications,
+      pret: retractedPublications,
+      frq: Math.round(frq * 100) / 100,
+      publicationRatio: Math.round(publicationRatio * 100) / 100,
+      fPublicationRatio: Math.round(fPublicationRatio * 1000) / 1000,
+      fRetracted: Math.round(fRetracted * 1000) / 1000,
+      total: Math.round(puScore * 100) / 100
+    }
+  };
+};
+
 export const calculateTLRScores = (data: TLRData): CalculatedScores['tlr'] => {
   // Student Strength (SS) - 20 marks
   // SS = f(NT, NE) × 15 + f(NP) × 5
@@ -197,21 +239,45 @@ export const calculateTLRScores = (data: TLRData): CalculatedScores['tlr'] => {
   };
 };
 
+export const calculateResearchScores = (researchData: ResearchData, tlrData: TLRData): CalculatedScores['research'] => {
+  // Calculate FRQ using TLR data
+  const frq = calculateFRQ(tlrData);
+  
+  // Publications (PU) - 35 marks
+  const puResult = calculatePU(researchData.totalWeightedPublications, researchData.retractedPublications, frq);
+  
+  // Placeholder calculations for other components (to be implemented)
+  const qpScore = Math.min(40, researchData.qualityPublications * 0.5); // Quality of Publications
+  const iprScore = Math.min(15, (researchData.patentsPublished + researchData.patentsGranted) * 0.3); // IPR and Patents
+  const fpppScore = Math.min(10, (researchData.projectsFootprint + researchData.professionalPractice) * 0.2); // FPPP
+  
+  const total = puResult.score + qpScore + iprScore + fpppScore;
+  
+  return {
+    pu: Math.round(puResult.score * 100) / 100,
+    puBreakdown: puResult.breakdown,
+    qp: Math.round(qpScore * 100) / 100,
+    ipr: Math.round(iprScore * 100) / 100,
+    fppp: Math.round(fpppScore * 100) / 100,
+    total: Math.round(total * 100) / 100
+  };
+};
+
 export const calculateFinalScore = (data: NIRFData): CalculatedScores => {
   const tlrScores = calculateTLRScores(data.tlr);
+  const researchScores = calculateResearchScores(data.research, data.tlr);
   
   // Simplified calculations for other sections (would need actual formulas)
-  const researchScore = Math.min(100, (data.research.publications * 0.4 + data.research.citations * 0.3 + data.research.patents * 0.2 + data.research.projects * 0.1));
   const graduationScore = Math.min(100, (data.graduation.graduationRate * 0.3 + data.graduation.employmentRate * 0.4 + data.graduation.higherStudiesRate * 0.2 + (data.graduation.medianSalary / 1000000) * 0.1 * 100));
   const outreachScore = Math.min(100, (data.outreach.diversityIndex * 0.25 + data.outreach.womenEnrollment * 0.25 + data.outreach.economicallyBackward * 0.25 + data.outreach.sociallyBackward * 0.25));
   const perceptionScore = Math.min(100, (data.perception.academicPeerScore * 0.4 + data.perception.employerScore * 0.4 + data.perception.publicationImpact * 0.2));
 
-  // Apply weightages
-  const finalScore = (tlrScores.total * 0.30) + (researchScore * 0.30) + (graduationScore * 0.20) + (outreachScore * 0.10) + (perceptionScore * 0.10);
+  // Apply weightages: TLR(30%), Research(30%), Graduation(20%), Outreach(10%), Perception(10%)
+  const finalScore = (tlrScores.total * 0.30) + (researchScores.total * 0.30) + (graduationScore * 0.20) + (outreachScore * 0.10) + (perceptionScore * 0.10);
 
   return {
     tlr: tlrScores,
-    research: Math.round(researchScore * 100) / 100,
+    research: researchScores,
     graduation: Math.round(graduationScore * 100) / 100,
     outreach: Math.round(outreachScore * 100) / 100,
     perception: Math.round(perceptionScore * 100) / 100,
