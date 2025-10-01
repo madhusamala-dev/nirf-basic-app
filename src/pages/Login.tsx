@@ -5,8 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { LogIn, Mail, Lock, GraduationCap, Shield } from 'lucide-react';
+import { LogIn, Mail, Lock, GraduationCap, Shield, Users } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { mockUsers } from '../lib/mockUsers';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -32,26 +33,15 @@ const Login: React.FC = () => {
     }
   };
 
-  const demoAccounts = [
-    {
-      email: 'coordinator@iitdelhi.ac.in',
-      role: 'coordinator',
-      institution: 'IIT Delhi',
-      icon: GraduationCap
-    },
-    {
-      email: 'coordinator@nit.ac.in',
-      role: 'coordinator',
-      institution: 'NIT Warangal',
-      icon: GraduationCap
-    },
-    {
-      email: 'admin@nirf.gov.in',
-      role: 'admin',
-      institution: 'NIRF HQ',
-      icon: Shield
+  // Group users by college for display
+  const collegeGroups = mockUsers.reduce((groups, user) => {
+    const collegeName = user.college.name;
+    if (!groups[collegeName]) {
+      groups[collegeName] = [];
     }
-  ];
+    groups[collegeName].push(user);
+    return groups;
+  }, {} as Record<string, typeof mockUsers>);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
@@ -134,40 +124,51 @@ const Login: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Demo Accounts */}
+        {/* Demo Accounts by College */}
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle className="text-lg">Demo Accounts</CardTitle>
             <CardDescription>
-              Click on any account below to auto-fill credentials
+              Click on any account below to auto-fill credentials (Password: demo123)
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {demoAccounts.map((account, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-                  onClick={() => {
-                    setEmail(account.email);
-                    setPassword('demo123');
-                  }}
-                >
-                  <div className="flex items-center space-x-3">
-                    <account.icon className="h-5 w-5 text-gray-600" />
-                    <div>
-                      <div className="font-medium text-sm">{account.institution}</div>
-                      <div className="text-xs text-gray-500">{account.email}</div>
-                    </div>
+            <div className="space-y-4">
+              {Object.entries(collegeGroups).map(([collegeName, users]) => (
+                <div key={collegeName} className="space-y-2">
+                  <div className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                    <Users className="h-4 w-4" />
+                    <span>{collegeName}</span>
                   </div>
-                  <Badge variant={account.role === 'admin' ? 'default' : 'secondary'}>
-                    {account.role}
-                  </Badge>
+                  <div className="space-y-2 ml-6">
+                    {users.map((user) => (
+                      <div
+                        key={user.id}
+                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                        onClick={() => {
+                          setEmail(user.email);
+                          setPassword('demo123');
+                        }}
+                      >
+                        <div className="flex items-center space-x-3">
+                          {user.role === 'admin' ? (
+                            <Shield className="h-4 w-4 text-red-600" />
+                          ) : (
+                            <GraduationCap className="h-4 w-4 text-blue-600" />
+                          )}
+                          <div>
+                            <div className="font-medium text-sm">{user.name}</div>
+                            <div className="text-xs text-gray-500">{user.email}</div>
+                          </div>
+                        </div>
+                        <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
+                          {user.role}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ))}
-            </div>
-            <div className="mt-4 text-xs text-gray-500 text-center">
-              Password for all demo accounts: <code className="bg-gray-100 px-1 rounded">demo123</code>
             </div>
           </CardContent>
         </Card>

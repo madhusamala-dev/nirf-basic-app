@@ -1,16 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-
-export interface User {
-  id: string;
-  email: string;
-  name: string;
-  role: 'admin' | 'coordinator';
-  college: {
-    name: string;
-    category: string;
-    location: string;
-  };
-}
+import { mockUsers, User } from '../lib/mockUsers';
 
 interface AuthContextType {
   user: User | null;
@@ -20,43 +9,6 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-// Mock user database
-const mockUsers: User[] = [
-  {
-    id: '1',
-    email: 'coordinator@iitdelhi.ac.in',
-    name: 'Dr. Rajesh Kumar',
-    role: 'coordinator',
-    college: {
-      name: 'Indian Institute of Technology Delhi',
-      category: 'Engineering',
-      location: 'New Delhi'
-    }
-  },
-  {
-    id: '2',
-    email: 'coordinator@nit.ac.in',
-    name: 'Prof. Priya Sharma',
-    role: 'coordinator',
-    college: {
-      name: 'National Institute of Technology',
-      category: 'Engineering',
-      location: 'Warangal'
-    }
-  },
-  {
-    id: '3',
-    email: 'admin@nirf.gov.in',
-    name: 'NIRF Administrator',
-    role: 'admin',
-    college: {
-      name: 'NIRF Headquarters',
-      category: 'Administrative',
-      location: 'New Delhi'
-    }
-  }
-];
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
