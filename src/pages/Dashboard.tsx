@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   BookOpen, 
   FlaskConical, 
@@ -12,23 +13,41 @@ import {
   BarChart3, 
   LogOut,
   User,
-  Building
+  Building,
+  Save,
+  X,
+  Shield
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useData } from '../context/DataContext';
 import TLRForm from '../components/forms/TLRForm';
 import ResearchForm from '../components/forms/ResearchForm';
 import GraduationForm from '../components/forms/GraduationForm';
 import OutreachForm from '../components/forms/OutreachForm';
 import PerceptionForm from '../components/forms/PerceptionForm';
 import ResultsDashboard from '../components/ResultsDashboard';
+import AdminDashboard from '../components/admin/AdminDashboard';
 
-type TabType = 'tlr' | 'research' | 'graduation' | 'outreach' | 'perception' | 'results';
+type TabType = 'overview' | 'tlr' | 'research' | 'graduation' | 'outreach' | 'perception' | 'results' | 'admin';
 
 const Dashboard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<TabType>('tlr');
+  const [activeTab, setActiveTab] = useState<TabType>('overview');
   const { user, logout } = useAuth();
+  const { 
+    submitForApproval, 
+    editSubmission, 
+    saveSubmissionChanges, 
+    cancelEdit, 
+    isEditing,
+    currentSubmission 
+  } = useData();
+
+  const isAdmin = user?.role === 'admin';
+  const isCoordinator = user?.role === 'coordinator';
 
   const tabs = [
+    { id: 'overview', label: 'Overview', icon: BarChart3, color: 'bg-gray-500' },
+    ...(isAdmin ? [{ id: 'admin', label: 'Admin Panel', icon: Shield, color: 'bg-red-500' }] : []),
     { id: 'tlr', label: 'TLR', icon: BookOpen, color: 'bg-blue-500' },
     { id: 'research', label: 'Research', icon: FlaskConical, color: 'bg-green-500' },
     { id: 'graduation', label: 'Graduation', icon: GraduationCap, color: 'bg-purple-500' },
@@ -37,8 +56,31 @@ const Dashboard: React.FC = () => {
     { id: 'results', label: 'Results', icon: BarChart3, color: 'bg-gray-500' }
   ];
 
+  const handleEditSubmission = (submissionId: string) => {
+    editSubmission(submissionId);
+    setActiveTab('tlr'); // Switch to first form tab for editing
+  };
+
+  const handleSaveChanges = () => {
+    saveSubmissionChanges();
+    setActiveTab('admin'); // Return to admin panel
+  };
+
+  const handleCancelEdit = () => {
+    cancelEdit();
+    setActiveTab('admin'); // Return to admin panel
+  };
+
+  const handleSubmitForApproval = () => {
+    if (window.confirm('Are you sure you want to submit this data for approval? You will not be able to edit it after submission.')) {
+      submitForApproval();
+    }
+  };
+
   const renderContent = () => {
     switch (activeTab) {
+      case 'admin':
+        return isAdmin ? <AdminDashboard onEditSubmission={handleEditSubmission} /> : null;
       case 'tlr':
         return <TLRForm />;
       case 'research':
@@ -51,8 +93,9 @@ const Dashboard: React.FC = () => {
         return <PerceptionForm />;
       case 'results':
         return <ResultsDashboard />;
+      case 'overview':
       default:
-        return <TLRForm />;
+        return <ResultsDashboard />;
     }
   };
 
@@ -99,12 +142,46 @@ const Dashboard: React.FC = () => {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Edit Mode Alert */}
+        {isEditing && currentSubmission && (
+          <Alert className="mb-6 border-orange-200 bg-orange-50">
+            <Edit className="h-4 w-4" />
+            <AlertDescription className="flex items-center justify-between">
+              <span>
+                You are editing submission from <strong>{currentSubmission.coordinatorName}</strong> 
+                ({currentSubmission.collegeName})
+              </span>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCancelEdit}
+                  className="flex items-center space-x-1"
+                >
+                  <X className="w-3 h-3" />
+                  <span>Cancel</span>
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleSaveChanges}
+                  className="flex items-center space-x-1"
+                >
+                  <Save className="w-3 h-3" />
+                  <span>Save Changes</span>
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="flex gap-8">
           {/* Sidebar Navigation */}
           <div className="w-64 flex-shrink-0">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">NIRF Assessment</CardTitle>
+                <CardTitle className="text-lg">
+                  {isAdmin ? 'Admin Panel' : 'NIRF Assessment'}
+                </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
                 <nav className="space-y-1">
@@ -144,6 +221,18 @@ const Dashboard: React.FC = () => {
                   <div className="text-xs text-gray-500">Location</div>
                   <div className="text-sm font-medium">{user?.college.location}</div>
                 </div>
+                
+                {isCoordinator && !isEditing && (
+                  <div className="pt-3 border-t">
+                    <Button
+                      onClick={handleSubmitForApproval}
+                      className="w-full"
+                      size="sm"
+                    >
+                      Submit for Approval
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
