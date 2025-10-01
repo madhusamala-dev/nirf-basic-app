@@ -1,67 +1,30 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-// Types for NIRF data structure
-interface TLRData {
-  ss: number;
-  fsr: number;
-  fqe: number;
-  fru: number;
-  total: number;
-}
-
-interface ResearchData {
-  pu: number;
-  qp: number;
-  ipr: number;
-  fppp: number;
-  total: number;
-}
-
-interface GraduationData {
-  go: number;
-  gph: number;
-  gue: number;
-  gms: number;
-  grd: number;
-  total: number;
-}
-
-interface OutreachData {
-  oi: number;
-  total: number;
-}
-
-interface PerceptionData {
-  pr: number;
-  total: number;
-}
-
-interface Scores {
-  tlr: TLRData;
-  research: ResearchData;
-  graduation: GraduationData;
-  outreach: OutreachData;
-  perception: PerceptionData;
-  overall: number;
-}
-
+// Types
 interface User {
   id: string;
-  username: string;
+  email: string;
   role: 'admin' | 'coordinator';
   college: string;
 }
 
+interface Scores {
+  tlr: { ss: number; fsr: number; fqe: number; fru: number; total: number };
+  research: { pu: number; qp: number; ipr: number; fppp: number; total: number };
+  graduation: { go: number; gph: number; gue: number; gms: number; grd: number; total: number };
+  outreach: { oi: number; total: number };
+  perception: { pr: number; total: number };
+  overall: number;
+}
+
 interface Submission {
   id: string;
-  collegeId: string;
-  collegeName: string;
-  coordinatorId: string;
-  coordinatorName: string;
-  scores: Scores;
+  college: string;
+  coordinator: string;
   status: 'draft' | 'submitted' | 'approved' | 'rejected';
-  submittedAt?: string;
-  reviewedAt?: string;
+  scores: Scores;
+  submittedAt?: Date;
+  reviewedAt?: Date;
   reviewedBy?: string;
   comments?: string;
 }
@@ -70,20 +33,32 @@ interface DataContextType {
   user: User | null;
   scores: Scores;
   submissions: Submission[];
-  login: (username: string, password: string) => boolean;
+  login: (email: string, password: string) => boolean;
   logout: () => void;
-  updateTLRData: (data: Partial<TLRData>) => void;
-  updateResearchData: (data: Partial<ResearchData>) => void;
-  updateGraduationData: (data: Partial<GraduationData>) => void;
-  updateOutreachData: (data: Partial<OutreachData>) => void;
-  updatePerceptionData: (data: Partial<PerceptionData>) => void;
+  updateTLRData: (data: Partial<Scores['tlr']>) => void;
+  updateResearchData: (data: Partial<Scores['research']>) => void;
+  updateGraduationData: (data: Partial<Scores['graduation']>) => void;
+  updateOutreachData: (data: Partial<Scores['outreach']>) => void;
+  updatePerceptionData: (data: Partial<Scores['perception']>) => void;
   submitForReview: () => void;
   getAllSubmissions: () => Submission[];
-  approveSubmission: (submissionId: string, comments?: string) => void;
-  rejectSubmission: (submissionId: string, comments: string) => void;
+  approveSubmission: (id: string, comments?: string) => void;
+  rejectSubmission: (id: string, comments: string) => void;
 }
 
-const defaultScores: Scores = {
+// Demo users
+const demoUsers: User[] = [
+  { id: '1', email: 'admin1@iit-delhi.ac.in', role: 'admin', college: 'IIT Delhi' },
+  { id: '2', email: 'coord1@iit-delhi.ac.in', role: 'coordinator', college: 'IIT Delhi' },
+  { id: '3', email: 'admin2@iit-bombay.ac.in', role: 'admin', college: 'IIT Bombay' },
+  { id: '4', email: 'coord2@iit-bombay.ac.in', role: 'coordinator', college: 'IIT Bombay' },
+  { id: '5', email: 'admin3@iit-madras.ac.in', role: 'admin', college: 'IIT Madras' },
+  { id: '6', email: 'coord3@iit-madras.ac.in', role: 'coordinator', college: 'IIT Madras' },
+];
+
+const DataContext = createContext<DataContextType | undefined>(undefined);
+
+const initialScores: Scores = {
   tlr: { ss: 0, fsr: 0, fqe: 0, fru: 0, total: 0 },
   research: { pu: 0, qp: 0, ipr: 0, fppp: 0, total: 0 },
   graduation: { go: 0, gph: 0, gue: 0, gms: 0, grd: 0, total: 0 },
@@ -92,21 +67,9 @@ const defaultScores: Scores = {
   overall: 0
 };
 
-// Demo users for testing
-const demoUsers: User[] = [
-  { id: '1', username: 'admin1', role: 'admin', college: 'IIT Delhi' },
-  { id: '2', username: 'coord1', role: 'coordinator', college: 'IIT Delhi' },
-  { id: '3', username: 'admin2', role: 'admin', college: 'IIT Bombay' },
-  { id: '4', username: 'coord2', role: 'coordinator', college: 'IIT Bombay' },
-  { id: '5', username: 'admin3', role: 'admin', college: 'IIT Madras' },
-  { id: '6', username: 'coord3', role: 'coordinator', college: 'IIT Madras' }
-];
-
-const DataContext = createContext<DataContextType | undefined>(undefined);
-
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [scores, setScores] = useState<Scores>(defaultScores);
+  const [scores, setScores] = useState<Scores>(initialScores);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
 
   // Load data from localStorage on mount
@@ -114,7 +77,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const savedUser = localStorage.getItem('nirf-user');
     const savedScores = localStorage.getItem('nirf-scores');
     const savedSubmissions = localStorage.getItem('nirf-submissions');
-
+    
     if (savedUser) {
       setUser(JSON.parse(savedUser));
     }
@@ -141,12 +104,14 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.setItem('nirf-submissions', JSON.stringify(submissions));
   }, [submissions]);
 
-  const login = (username: string, password: string): boolean => {
-    // Simple demo authentication - in real app, this would be secure
-    const foundUser = demoUsers.find(u => u.username === username && password === 'demo123');
-    if (foundUser) {
-      setUser(foundUser);
-      return true;
+  const login = (email: string, password: string): boolean => {
+    // Simple demo authentication - password is always "password"
+    if (password === 'password') {
+      const foundUser = demoUsers.find(u => u.email === email);
+      if (foundUser) {
+        setUser(foundUser);
+        return true;
+      }
     }
     return false;
   };
@@ -166,17 +131,18 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     );
   };
 
-  const updateTLRData = (data: Partial<TLRData>) => {
+  const updateTLRData = (data: Partial<Scores['tlr']>) => {
     setScores(prev => {
-      const newTLR = { ...prev.tlr, ...data };
-      newTLR.total = newTLR.ss + newTLR.fsr + newTLR.fqe + newTLR.fru;
-      const newScores = { ...prev, tlr: newTLR };
+      const newTlr = { ...prev.tlr, ...data };
+      // TLR total is now calculated as sum of components (SS:20 + FSR:30 + FQE:20 + FRU:30 = 100)
+      newTlr.total = newTlr.ss + newTlr.fsr + newTlr.fqe + newTlr.fru;
+      const newScores = { ...prev, tlr: newTlr };
       newScores.overall = calculateTotalScore(newScores);
       return newScores;
     });
   };
 
-  const updateResearchData = (data: Partial<ResearchData>) => {
+  const updateResearchData = (data: Partial<Scores['research']>) => {
     setScores(prev => {
       const newResearch = { ...prev.research, ...data };
       newResearch.total = newResearch.pu + newResearch.qp + newResearch.ipr + newResearch.fppp;
@@ -186,7 +152,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
   };
 
-  const updateGraduationData = (data: Partial<GraduationData>) => {
+  const updateGraduationData = (data: Partial<Scores['graduation']>) => {
     setScores(prev => {
       const newGraduation = { ...prev.graduation, ...data };
       newGraduation.total = newGraduation.go + newGraduation.gph + newGraduation.gue + newGraduation.gms + newGraduation.grd;
@@ -196,7 +162,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
   };
 
-  const updateOutreachData = (data: Partial<OutreachData>) => {
+  const updateOutreachData = (data: Partial<Scores['outreach']>) => {
     setScores(prev => {
       const newOutreach = { ...prev.outreach, ...data };
       newOutreach.total = newOutreach.oi;
@@ -206,7 +172,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
   };
 
-  const updatePerceptionData = (data: Partial<PerceptionData>) => {
+  const updatePerceptionData = (data: Partial<Scores['perception']>) => {
     setScores(prev => {
       const newPerception = { ...prev.perception, ...data };
       newPerception.total = newPerception.pr;
@@ -218,18 +184,16 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const submitForReview = () => {
     if (!user) return;
-
+    
     const newSubmission: Submission = {
       id: Date.now().toString(),
-      collegeId: user.id,
-      collegeName: user.college,
-      coordinatorId: user.id,
-      coordinatorName: user.username,
-      scores: { ...scores },
+      college: user.college,
+      coordinator: user.email,
       status: 'submitted',
-      submittedAt: new Date().toISOString()
+      scores: { ...scores },
+      submittedAt: new Date(),
     };
-
+    
     setSubmissions(prev => [...prev, newSubmission]);
   };
 
@@ -237,28 +201,28 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return submissions;
   };
 
-  const approveSubmission = (submissionId: string, comments?: string) => {
+  const approveSubmission = (id: string, comments?: string) => {
     setSubmissions(prev => prev.map(sub => 
-      sub.id === submissionId 
+      sub.id === id 
         ? { 
             ...sub, 
             status: 'approved' as const, 
-            reviewedAt: new Date().toISOString(),
-            reviewedBy: user?.username,
+            reviewedAt: new Date(), 
+            reviewedBy: user?.email,
             comments 
           }
         : sub
     ));
   };
 
-  const rejectSubmission = (submissionId: string, comments: string) => {
+  const rejectSubmission = (id: string, comments: string) => {
     setSubmissions(prev => prev.map(sub => 
-      sub.id === submissionId 
+      sub.id === id 
         ? { 
             ...sub, 
             status: 'rejected' as const, 
-            reviewedAt: new Date().toISOString(),
-            reviewedBy: user?.username,
+            reviewedAt: new Date(), 
+            reviewedBy: user?.email,
             comments 
           }
         : sub
@@ -279,13 +243,17 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     submitForReview,
     getAllSubmissions,
     approveSubmission,
-    rejectSubmission
+    rejectSubmission,
   };
 
-  return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
+  return (
+    <DataContext.Provider value={value}>
+      {children}
+    </DataContext.Provider>
+  );
 };
 
-export const useData = (): DataContextType => {
+export const useData = () => {
   const context = useContext(DataContext);
   if (context === undefined) {
     throw new Error('useData must be used within a DataProvider');

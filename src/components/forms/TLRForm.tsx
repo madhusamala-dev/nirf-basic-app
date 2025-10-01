@@ -1,256 +1,410 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, Users, GraduationCap, DollarSign } from 'lucide-react';
+import { BookOpen, Users, GraduationCap, DollarSign, Save } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 
 const TLRForm: React.FC = () => {
   const { scores, updateTLRData } = useData();
   
-  // Safe destructuring with fallback values
-  const tlrData = scores?.tlr || { ss: 0, fsr: 0, fqe: 0, fru: 0, total: 0 };
-  
-  const [formData, setFormData] = useState({
-    studentStrength: 0,
-    facultyCount: 0,
+  // Local state for form inputs
+  const [formData, setFormData] = React.useState({
+    // Student Strength (SS) - 20 marks
+    totalStudents: 0,
+    doctoralStudents: 0,
+    
+    // Faculty-Student Ratio (FSR) - 30 marks
+    totalFaculty: 0,
+    permanentFaculty: 0,
+    studentCount: 0,
+    
+    // Faculty Qualification & Experience (FQE) - 20 marks
     facultyWithPhD: 0,
-    totalExpenditure: 0,
+    facultyExperience: 0,
+    
+    // Financial Resources & Utilisation (FRU) - 30 marks
+    totalRevenue: 0,
+    capitalExpenditure: 0,
+    operationalExpenditure: 0,
+    salaryExpenditure: 0
   });
+
+  // Calculate individual component scores
+  const calculateSS = () => {
+    // Student Strength calculation (20 marks max)
+    const totalWeight = Math.min((formData.totalStudents / 1000) * 15, 15);
+    const doctoralWeight = Math.min((formData.doctoralStudents / 100) * 5, 5);
+    return Math.min(totalWeight + doctoralWeight, 20);
+  };
+
+  const calculateFSR = () => {
+    // Faculty-Student Ratio calculation (30 marks max)
+    if (formData.studentCount === 0 || formData.totalFaculty === 0) return 0;
+    
+    const ratio = formData.studentCount / formData.totalFaculty;
+    const permanentRatio = formData.permanentFaculty / formData.totalFaculty;
+    
+    // Ideal ratio is around 15:1, permanent faculty should be high
+    const ratioScore = Math.max(0, 20 - Math.abs(ratio - 15) * 2);
+    const permanentScore = permanentRatio * 10;
+    
+    return Math.min(ratioScore + permanentScore, 30);
+  };
+
+  const calculateFQE = () => {
+    // Faculty Qualification & Experience calculation (20 marks max)
+    if (formData.totalFaculty === 0) return 0;
+    
+    const phdRatio = formData.facultyWithPhD / formData.totalFaculty;
+    const experienceScore = Math.min(formData.facultyExperience / 15, 1);
+    
+    const phdScore = phdRatio * 12;
+    const expScore = experienceScore * 8;
+    
+    return Math.min(phdScore + expScore, 20);
+  };
+
+  const calculateFRU = () => {
+    // Financial Resources & Utilisation calculation (30 marks max)
+    if (formData.totalRevenue === 0) return 0;
+    
+    const revenueScore = Math.min((formData.totalRevenue / 100000000) * 15, 15); // 10 crores base
+    const utilizationRatio = (formData.capitalExpenditure + formData.operationalExpenditure) / formData.totalRevenue;
+    const utilizationScore = Math.min(utilizationRatio * 15, 15);
+    
+    return Math.min(revenueScore + utilizationScore, 30);
+  };
 
   const handleInputChange = (field: string, value: string) => {
     const numValue = parseFloat(value) || 0;
-    const updatedData = { ...formData, [field]: numValue };
-    setFormData(updatedData);
-    
-    // Calculate TLR scores based on input
-    const calculatedScores = calculateTLRScores(updatedData);
-    updateTLRData(calculatedScores);
+    setFormData(prev => ({ ...prev, [field]: numValue }));
   };
 
-  const calculateTLRScores = (data: typeof formData) => {
-    // Student Strength Score (SS) - Max 20 points
-    const ss = Math.min((data.studentStrength / 2000) * 20, 20);
+  const handleSave = () => {
+    const ss = calculateSS();
+    const fsr = calculateFSR();
+    const fqe = calculateFQE();
+    const fru = calculateFRU();
     
-    // Faculty-Student Ratio (FSR) - Max 30 points
-    const ratio = data.facultyCount > 0 ? data.studentStrength / data.facultyCount : 0;
-    const fsr = ratio > 0 ? Math.min((15 / ratio) * 30, 30) : 0;
-    
-    // Faculty with PhD (FQE) - Max 20 points
-    const phdPercentage = data.facultyCount > 0 ? (data.facultyWithPhD / data.facultyCount) * 100 : 0;
-    const fqe = Math.min((phdPercentage / 100) * 20, 20);
-    
-    // Financial Resources and Utilization (FRU) - Max 30 points
-    const fru = Math.min((data.totalExpenditure / 100000000) * 30, 30);
-    
-    const total = ss + fsr + fqe + fru;
-    
-    return { ss, fsr, fqe, fru, total };
+    updateTLRData({
+      ss,
+      fsr,
+      fqe,
+      fru
+    });
   };
 
-  const metrics = [
-    {
-      id: 'ss',
-      title: 'Student Strength',
-      value: tlrData.ss,
-      maxValue: 20,
-      icon: Users,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50'
-    },
-    {
-      id: 'fsr',
-      title: 'Faculty-Student Ratio',
-      value: tlrData.fsr,
-      maxValue: 30,
-      icon: GraduationCap,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50'
-    },
-    {
-      id: 'fqe',
-      title: 'Faculty Qualification',
-      value: tlrData.fqe,
-      maxValue: 20,
-      icon: BookOpen,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50'
-    },
-    {
-      id: 'fru',
-      title: 'Financial Resources',
-      value: tlrData.fru,
-      maxValue: 30,
-      icon: DollarSign,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-50'
-    }
-  ];
+  const currentSS = calculateSS();
+  const currentFSR = calculateFSR();
+  const currentFQE = calculateFQE();
+  const currentFRU = calculateFRU();
+  const totalScore = currentSS + currentFSR + currentFQE + currentFRU;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Teaching, Learning & Resources (TLR)</h1>
-          <p className="text-gray-600 mt-1">Enter your institution's TLR data for NIRF assessment</p>
+          <h2 className="text-2xl font-bold text-gray-900">Teaching, Learning & Resources (TLR)</h2>
+          <p className="text-gray-600 mt-1">Weight: 30% | Maximum Score: 100 marks</p>
         </div>
         <div className="text-right">
-          <div className="text-3xl font-bold text-blue-600">{tlrData.total.toFixed(2)}</div>
-          <div className="text-sm text-gray-500">Total TLR Score</div>
+          <div className="text-3xl font-bold text-blue-600">{totalScore.toFixed(1)}</div>
+          <div className="text-sm text-gray-500">Current Score</div>
         </div>
       </div>
 
       {/* Score Overview */}
-      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+      <Card className="bg-blue-50 border-blue-200">
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <BookOpen className="h-6 w-6 text-blue-600" />
-            <span>TLR Score Breakdown</span>
-          </CardTitle>
+          <CardTitle className="text-blue-900">TLR Score Breakdown</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {metrics.map((metric) => (
-              <div key={metric.id} className={`text-center p-4 ${metric.bgColor} rounded-lg`}>
-                <metric.icon className={`h-6 w-6 ${metric.color} mx-auto mb-2`} />
-                <div className={`text-2xl font-bold ${metric.color}`}>
-                  {metric.value.toFixed(1)}
-                </div>
-                <div className="text-xs text-gray-600">
-                  out of {metric.maxValue}
-                </div>
-                <Progress 
-                  value={(metric.value / metric.maxValue) * 100} 
-                  className="h-2 mt-2" 
-                />
-              </div>
-            ))}
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">{currentSS.toFixed(1)}</div>
+              <div className="text-sm text-gray-600">SS (20 max)</div>
+              <Progress value={(currentSS / 20) * 100} className="h-2 mt-1" />
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">{currentFSR.toFixed(1)}</div>
+              <div className="text-sm text-gray-600">FSR (30 max)</div>
+              <Progress value={(currentFSR / 30) * 100} className="h-2 mt-1" />
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">{currentFQE.toFixed(1)}</div>
+              <div className="text-sm text-gray-600">FQE (20 max)</div>
+              <Progress value={(currentFQE / 20) * 100} className="h-2 mt-1" />
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">{currentFRU.toFixed(1)}</div>
+              <div className="text-sm text-gray-600">FRU (30 max)</div>
+              <Progress value={(currentFRU / 30) * 100} className="h-2 mt-1" />
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Input Forms */}
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Users className="h-5 w-5" />
-              <span>Student & Faculty Data</span>
-            </CardTitle>
-            <CardDescription>
-              Enter the total number of students and faculty members
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="studentStrength">Total Student Strength</Label>
+      {/* A. Student Strength (SS) - 20 marks */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Users className="h-5 w-5 text-blue-600" />
+            <span>A. Student Strength including Doctoral Students (SS)</span>
+            <Badge variant="outline">20 marks</Badge>
+          </CardTitle>
+          <CardDescription>
+            Total student enrollment including undergraduate, postgraduate, and doctoral students
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="totalStudents">Total Students</Label>
               <Input
-                id="studentStrength"
+                id="totalStudents"
                 type="number"
-                value={formData.studentStrength}
-                onChange={(e) => handleInputChange('studentStrength', e.target.value)}
-                placeholder="Enter total number of students"
+                placeholder="e.g., 5000"
+                value={formData.totalStudents || ''}
+                onChange={(e) => handleInputChange('totalStudents', e.target.value)}
               />
+              <p className="text-xs text-gray-500 mt-1">All enrolled students (UG + PG + PhD)</p>
             </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="facultyCount">Total Faculty Count</Label>
+            <div>
+              <Label htmlFor="doctoralStudents">Doctoral Students</Label>
               <Input
-                id="facultyCount"
+                id="doctoralStudents"
                 type="number"
-                value={formData.facultyCount}
-                onChange={(e) => handleInputChange('facultyCount', e.target.value)}
-                placeholder="Enter total number of faculty"
+                placeholder="e.g., 200"
+                value={formData.doctoralStudents || ''}
+                onChange={(e) => handleInputChange('doctoralStudents', e.target.value)}
               />
+              <p className="text-xs text-gray-500 mt-1">PhD and research scholars</p>
             </div>
-            
-            <div className="space-y-2">
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* B. Faculty-Student Ratio (FSR) - 30 marks */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <GraduationCap className="h-5 w-5 text-green-600" />
+            <span>B. Faculty-Student Ratio with emphasis on permanent faculty (FSR)</span>
+            <Badge variant="outline">30 marks</Badge>
+          </CardTitle>
+          <CardDescription>
+            Faculty strength and student-faculty ratio with emphasis on permanent appointments
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="totalFaculty">Total Faculty</Label>
+              <Input
+                id="totalFaculty"
+                type="number"
+                placeholder="e.g., 300"
+                value={formData.totalFaculty || ''}
+                onChange={(e) => handleInputChange('totalFaculty', e.target.value)}
+              />
+              <p className="text-xs text-gray-500 mt-1">All teaching faculty</p>
+            </div>
+            <div>
+              <Label htmlFor="permanentFaculty">Permanent Faculty</Label>
+              <Input
+                id="permanentFaculty"
+                type="number"
+                placeholder="e.g., 250"
+                value={formData.permanentFaculty || ''}
+                onChange={(e) => handleInputChange('permanentFaculty', e.target.value)}
+              />
+              <p className="text-xs text-gray-500 mt-1">Regular/permanent appointments</p>
+            </div>
+            <div>
+              <Label htmlFor="studentCount">Student Count for Ratio</Label>
+              <Input
+                id="studentCount"
+                type="number"
+                placeholder="e.g., 4500"
+                value={formData.studentCount || ''}
+                onChange={(e) => handleInputChange('studentCount', e.target.value)}
+              />
+              <p className="text-xs text-gray-500 mt-1">Students considered for ratio calculation</p>
+            </div>
+          </div>
+          {formData.totalFaculty > 0 && formData.studentCount > 0 && (
+            <div className="p-3 bg-green-50 rounded-lg">
+              <p className="text-sm text-green-800">
+                Current Ratio: {(formData.studentCount / formData.totalFaculty).toFixed(1)}:1 
+                | Permanent Faculty: {((formData.permanentFaculty / formData.totalFaculty) * 100).toFixed(1)}%
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* C. Faculty Qualification & Experience (FQE) - 20 marks */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <BookOpen className="h-5 w-5 text-purple-600" />
+            <span>C. Combined metric for Faculty with PhD and Experience (FQE)</span>
+            <Badge variant="outline">20 marks</Badge>
+          </CardTitle>
+          <CardDescription>
+            Faculty qualifications (PhD) and average teaching/research experience
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
               <Label htmlFor="facultyWithPhD">Faculty with PhD</Label>
               <Input
                 id="facultyWithPhD"
                 type="number"
-                value={formData.facultyWithPhD}
+                placeholder="e.g., 280"
+                value={formData.facultyWithPhD || ''}
                 onChange={(e) => handleInputChange('facultyWithPhD', e.target.value)}
-                placeholder="Enter number of faculty with PhD"
               />
+              <p className="text-xs text-gray-500 mt-1">Faculty with PhD or equivalent degree</p>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <DollarSign className="h-5 w-5" />
-              <span>Financial Resources</span>
-            </CardTitle>
-            <CardDescription>
-              Enter the total expenditure for the academic year
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="totalExpenditure">Total Expenditure (in INR)</Label>
+            <div>
+              <Label htmlFor="facultyExperience">Average Faculty Experience (years)</Label>
               <Input
-                id="totalExpenditure"
+                id="facultyExperience"
                 type="number"
-                value={formData.totalExpenditure}
-                onChange={(e) => handleInputChange('totalExpenditure', e.target.value)}
-                placeholder="Enter total expenditure in rupees"
+                placeholder="e.g., 12"
+                value={formData.facultyExperience || ''}
+                onChange={(e) => handleInputChange('facultyExperience', e.target.value)}
               />
+              <p className="text-xs text-gray-500 mt-1">Average teaching/research experience</p>
             </div>
-            
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <h4 className="font-medium text-gray-900 mb-2">Current Metrics</h4>
-              <div className="space-y-1 text-sm text-gray-600">
-                <div className="flex justify-between">
-                  <span>Faculty-Student Ratio:</span>
-                  <span>{formData.facultyCount > 0 ? (formData.studentStrength / formData.facultyCount).toFixed(2) : '0'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>PhD Faculty %:</span>
-                  <span>{formData.facultyCount > 0 ? ((formData.facultyWithPhD / formData.facultyCount) * 100).toFixed(1) : '0'}%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Expenditure per Student:</span>
-                  <span>₹{formData.studentStrength > 0 ? (formData.totalExpenditure / formData.studentStrength).toLocaleString() : '0'}</span>
-                </div>
-              </div>
+          </div>
+          {formData.totalFaculty > 0 && formData.facultyWithPhD > 0 && (
+            <div className="p-3 bg-purple-50 rounded-lg">
+              <p className="text-sm text-purple-800">
+                PhD Ratio: {((formData.facultyWithPhD / formData.totalFaculty) * 100).toFixed(1)}%
+                | Average Experience: {formData.facultyExperience} years
+              </p>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          )}
+        </CardContent>
+      </Card>
 
-      {/* Guidelines */}
+      {/* D. Financial Resources & Utilisation (FRU) - 30 marks */}
       <Card>
         <CardHeader>
-          <CardTitle>TLR Assessment Guidelines</CardTitle>
+          <CardTitle className="flex items-center space-x-2">
+            <DollarSign className="h-5 w-5 text-orange-600" />
+            <span>D. Financial Resources and their Utilisation (FRU)</span>
+            <Badge variant="outline">30 marks</Badge>
+          </CardTitle>
+          <CardDescription>
+            Annual financial resources, expenditure patterns, and resource utilization
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="totalRevenue">Total Annual Revenue (₹)</Label>
+              <Input
+                id="totalRevenue"
+                type="number"
+                placeholder="e.g., 50000000"
+                value={formData.totalRevenue || ''}
+                onChange={(e) => handleInputChange('totalRevenue', e.target.value)}
+              />
+              <p className="text-xs text-gray-500 mt-1">Total institutional revenue per year</p>
+            </div>
+            <div>
+              <Label htmlFor="capitalExpenditure">Capital Expenditure (₹)</Label>
+              <Input
+                id="capitalExpenditure"
+                type="number"
+                placeholder="e.g., 10000000"
+                value={formData.capitalExpenditure || ''}
+                onChange={(e) => handleInputChange('capitalExpenditure', e.target.value)}
+              />
+              <p className="text-xs text-gray-500 mt-1">Infrastructure, equipment, facilities</p>
+            </div>
+            <div>
+              <Label htmlFor="operationalExpenditure">Operational Expenditure (₹)</Label>
+              <Input
+                id="operationalExpenditure"
+                type="number"
+                placeholder="e.g., 25000000"
+                value={formData.operationalExpenditure || ''}
+                onChange={(e) => handleInputChange('operationalExpenditure', e.target.value)}
+              />
+              <p className="text-xs text-gray-500 mt-1">Running costs, maintenance, utilities</p>
+            </div>
+            <div>
+              <Label htmlFor="salaryExpenditure">Salary Expenditure (₹)</Label>
+              <Input
+                id="salaryExpenditure"
+                type="number"
+                placeholder="e.g., 20000000"
+                value={formData.salaryExpenditure || ''}
+                onChange={(e) => handleInputChange('salaryExpenditure', e.target.value)}
+              />
+              <p className="text-xs text-gray-500 mt-1">Faculty and staff salaries</p>
+            </div>
+          </div>
+          {formData.totalRevenue > 0 && (
+            <div className="p-3 bg-orange-50 rounded-lg">
+              <p className="text-sm text-orange-800">
+                Total Expenditure: ₹{((formData.capitalExpenditure + formData.operationalExpenditure + formData.salaryExpenditure) / 10000000).toFixed(1)} Cr
+                | Utilization: {(((formData.capitalExpenditure + formData.operationalExpenditure) / formData.totalRevenue) * 100).toFixed(1)}%
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Guidelines */}
+      <Card className="bg-gray-50 border-gray-200">
+        <CardHeader>
+          <CardTitle className="text-gray-800">NIRF TLR Guidelines</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <h4 className="font-medium text-gray-900 mb-2">Scoring Criteria</h4>
+              <h4 className="font-medium text-gray-900 mb-2">Scoring Guidelines</h4>
               <ul className="space-y-1 text-sm text-gray-600">
-                <li>• Student Strength (SS): Max 20 points</li>
-                <li>• Faculty-Student Ratio (FSR): Max 30 points</li>
-                <li>• Faculty Qualification (FQE): Max 20 points</li>
-                <li>• Financial Resources (FRU): Max 30 points</li>
+                <li>• SS (20 marks): Student enrollment strength</li>
+                <li>• FSR (30 marks): Faculty-student ratio quality</li>
+                <li>• FQE (20 marks): Faculty qualifications & experience</li>
+                <li>• FRU (30 marks): Financial resource utilization</li>
               </ul>
             </div>
             <div>
               <h4 className="font-medium text-gray-900 mb-2">Best Practices</h4>
               <ul className="space-y-1 text-sm text-gray-600">
-                <li>• Maintain optimal faculty-student ratio (1:15 ideal)</li>
-                <li>• Encourage faculty to pursue PhD qualifications</li>
-                <li>• Invest in infrastructure and learning resources</li>
-                <li>• Ensure adequate financial allocation per student</li>
+                <li>• Optimal faculty-student ratio: 1:15 or better</li>
+                <li>• High percentage of permanent faculty (&gt;70%)</li>
+                <li>• Faculty with PhD: &gt;80% recommended</li>
+                <li>• Adequate per-student expenditure (&gt;₹2 lakhs)</li>
+                <li>• Significant research funding allocation (&gt;15%)</li>
+                <li>• Strong doctoral program participation</li>
+                <li>• Experienced faculty retention (&gt;60%)</li>
+                <li>• Infrastructure investment (&gt;20% capital exp.)</li>
               </ul>
             </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Save Button */}
+      <div className="flex justify-end">
+        <Button onClick={handleSave} className="flex items-center space-x-2">
+          <Save className="h-4 w-4" />
+          <span>Save TLR Data</span>
+        </Button>
+      </div>
     </div>
   );
 };
