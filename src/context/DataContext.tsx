@@ -26,7 +26,10 @@ interface GraduationData {
 }
 
 interface OutreachData {
-  oi: number;
+  rd: number;
+  wd: number;
+  escs: number;
+  pcs: number;
   total: number;
 }
 
@@ -86,7 +89,7 @@ const defaultScores: Scores = {
   tlr: { ss: 0, fsr: 0, fqe: 0, fru: 0, total: 0 },
   research: { pu: 0, qp: 0, ipr: 0, fppp: 0, total: 0 },
   graduation: { gph: 0, gue: 0, gms: 0, gphd: 0, total: 0 },
-  outreach: { oi: 0, total: 0 },
+  outreach: { rd: 0, wd: 0, escs: 0, pcs: 0, total: 0 },
   perception: { pr: 0, total: 0 },
   overall: 0
 };
@@ -201,7 +204,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const updateOutreachData = (data: Partial<OutreachData>) => {
     setScores(prev => {
       const newOutreach = { ...prev.outreach, ...data };
-      newOutreach.total = newOutreach.oi;
+      // Outreach: RD(30) + WD(30) + ESCS(20) + PCS(20) = 100 marks
+      newOutreach.total = newOutreach.rd + newOutreach.wd + newOutreach.escs + newOutreach.pcs;
       const newScores = { ...prev, outreach: newOutreach };
       newScores.overall = calculateTotalScore(newScores);
       return newScores;
@@ -290,7 +294,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 export const useData = (): DataContextType => {
   const context = useContext(DataContext);
   if (context === undefined) {
-    throw new error('useData must be used within a DataProvider');
+    throw new Error('useData must be used within a DataProvider');
   }
   return context;
 };

@@ -215,7 +215,7 @@ const ResultsDashboard: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Graduation Component Breakdown - Updated with new NIRF structure */}
+      {/* Graduation Component Breakdown */}
       <Card className="bg-purple-50 border-purple-200">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2 text-purple-900">
@@ -242,7 +242,7 @@ const ResultsDashboard: React.FC = () => {
               <div className={`text-2xl font-bold ${getScoreColor(scores.graduation.gue || 0, 15)}`}>
                 {(scores.graduation.gue || 0).toFixed(1)}
               </div>
-              <div className="text-sm text-gray-600 mt-1">University Examinations (GUE)</div>
+              <div className="text-sm text-gray-600 mt-1">University Exams (GUE)</div>
               <div className="text-xs text-gray-500">Academic Performance</div>
               <div className="text-xs text-gray-600 font-medium">Max: 15 marks</div>
               <Progress 
@@ -255,7 +255,7 @@ const ResultsDashboard: React.FC = () => {
                 {(scores.graduation.gms || 0).toFixed(1)}
               </div>
               <div className="text-sm text-gray-600 mt-1">Median Salary (GMS)</div>
-              <div className="text-xs text-gray-500">Salary Statistics</div>
+              <div className="text-xs text-gray-500">Compensation Data</div>
               <div className="text-xs text-gray-600 font-medium">Max: 25 marks</div>
               <Progress 
                 value={((scores.graduation.gms || 0) / 25) * 100} 
@@ -283,51 +283,69 @@ const ResultsDashboard: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Outreach Component Breakdown */}
+      {/* Outreach Component Breakdown - Updated with new NIRF structure */}
       <Card className="bg-orange-50 border-orange-200">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2 text-orange-900">
             <Users className="h-5 w-5" />
             <span>Outreach Component Breakdown</span>
           </CardTitle>
-          <CardDescription>Outreach & Inclusivity (Weight: 10%)</CardDescription>
+          <CardDescription>Outreach & Inclusivity (Weight: 10%) - Official NIRF Structure</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center p-4 bg-white rounded-lg border">
-              <div className={`text-2xl font-bold ${getScoreColor(scores.outreach.oi, 100)}`}>
-                {scores.outreach.oi.toFixed(1)}
+              <div className={`text-2xl font-bold ${getScoreColor(scores.outreach.rd || 0, 30)}`}>
+                {(scores.outreach.rd || 0).toFixed(1)}
               </div>
-              <div className="text-sm text-gray-600 mt-1">Overall Inclusivity</div>
-              <div className="text-xs text-gray-500">Max: 100</div>
+              <div className="text-sm text-gray-600 mt-1">Region Diversity (RD)</div>
+              <div className="text-xs text-gray-500">Other States/Countries</div>
+              <div className="text-xs text-gray-600 font-medium">Max: 30 marks</div>
               <Progress 
-                value={scores.outreach.oi} 
+                value={((scores.outreach.rd || 0) / 30) * 100} 
                 className="h-2 mt-2"
               />
             </div>
             <div className="text-center p-4 bg-white rounded-lg border">
-              <div className="text-lg font-medium text-orange-600">Regional</div>
-              <div className="text-sm text-gray-600 mt-1">Diversity</div>
-              <div className="text-xs text-gray-500">Geographic spread</div>
-              <div className="mt-2 h-2 bg-orange-200 rounded-full">
-                <div className="h-2 bg-orange-500 rounded-full" style={{width: '30%'}}></div>
+              <div className={`text-2xl font-bold ${getScoreColor(scores.outreach.wd || 0, 30)}`}>
+                {(scores.outreach.wd || 0).toFixed(1)}
               </div>
+              <div className="text-sm text-gray-600 mt-1">Women Diversity (WD)</div>
+              <div className="text-xs text-gray-500">Gender Inclusivity</div>
+              <div className="text-xs text-gray-600 font-medium">Max: 30 marks</div>
+              <Progress 
+                value={((scores.outreach.wd || 0) / 30) * 100} 
+                className="h-2 mt-2"
+              />
             </div>
             <div className="text-center p-4 bg-white rounded-lg border">
-              <div className="text-lg font-medium text-orange-600">Women</div>
-              <div className="text-sm text-gray-600 mt-1">Participation</div>
-              <div className="text-xs text-gray-500">Gender inclusivity</div>
-              <div className="mt-2 h-2 bg-orange-200 rounded-full">
-                <div className="h-2 bg-orange-500 rounded-full" style={{width: '30%'}}></div>
+              <div className={`text-2xl font-bold ${getScoreColor(scores.outreach.escs || 0, 20)}`}>
+                {(scores.outreach.escs || 0).toFixed(1)}
               </div>
+              <div className="text-sm text-gray-600 mt-1">ESCS Support</div>
+              <div className="text-xs text-gray-500">Economic & Social</div>
+              <div className="text-xs text-gray-600 font-medium">Max: 20 marks</div>
+              <Progress 
+                value={((scores.outreach.escs || 0) / 20) * 100} 
+                className="h-2 mt-2"
+              />
             </div>
             <div className="text-center p-4 bg-white rounded-lg border">
-              <div className="text-lg font-medium text-orange-600">Economic</div>
-              <div className="text-sm text-gray-600 mt-1">Support</div>
-              <div className="text-xs text-gray-500">Financial assistance</div>
-              <div className="mt-2 h-2 bg-orange-200 rounded-full">
-                <div className="h-2 bg-orange-500 rounded-full" style={{width: '20%'}}></div>
+              <div className={`text-2xl font-bold ${getScoreColor(scores.outreach.pcs || 0, 20)}`}>
+                {(scores.outreach.pcs || 0).toFixed(1)}
               </div>
+              <div className="text-sm text-gray-600 mt-1">PCS Facilities</div>
+              <div className="text-xs text-gray-500">Physical Accessibility</div>
+              <div className="text-xs text-gray-600 font-medium">Max: 20 marks</div>
+              <Progress 
+                value={((scores.outreach.pcs || 0) / 20) * 100} 
+                className="h-2 mt-2"
+              />
+            </div>
+          </div>
+          <div className="mt-4 p-3 bg-orange-100 rounded-lg">
+            <div className="text-sm text-orange-800 text-center">
+              <strong>Official NIRF Outreach Structure:</strong> RD (30) + WD (30) + ESCS (20) + PCS (20) = 100 marks total
             </div>
           </div>
         </CardContent>
