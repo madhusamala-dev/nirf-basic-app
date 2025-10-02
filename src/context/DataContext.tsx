@@ -1,7 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 
-// Types for NIRF data structure
-interface TLRData {
+export interface TLRScores {
   ss: number;
   fsr: number;
   fqe: number;
@@ -9,23 +8,23 @@ interface TLRData {
   total: number;
 }
 
-interface ResearchData {
+export interface ResearchScores {
   pu: number;
   qp: number;
-  ipr: number;
+  iprf: number;
   fppp: number;
   total: number;
 }
 
-interface GraduationData {
+export interface GraduationScores {
   gph: number;
   gue: number;
   gms: number;
-  gphd: number;
+  grd: number;
   total: number;
 }
 
-interface OutreachData {
+export interface OutreachScores {
   rd: number;
   wd: number;
   escs: number;
@@ -33,265 +32,303 @@ interface OutreachData {
   total: number;
 }
 
-interface PerceptionData {
-  pr: number;
-  total: number;
+export interface FormSection {
+  data: any;
+  coordinatorEmail: string;
+  lastModified: Date;
+  modifiedBy: 'coordinator' | 'admin';
+  adminNotes?: string;
 }
 
-interface Scores {
-  tlr: TLRData;
-  research: ResearchData;
-  graduation: GraduationData;
-  outreach: OutreachData;
-  perception: PerceptionData;
+export interface Scores {
+  tlr: TLRScores;
+  research: ResearchScores;
+  graduation: GraduationScores;
+  outreach: OutreachScores;
   overall: number;
 }
 
-interface User {
+export interface Submission {
   id: string;
-  username: string;
-  role: 'admin' | 'coordinator';
-  college: string;
-}
-
-interface Submission {
-  id: string;
-  collegeId: string;
   collegeName: string;
-  coordinatorId: string;
   coordinatorName: string;
+  coordinatorEmail: string;
   scores: Scores;
   status: 'draft' | 'submitted' | 'approved' | 'rejected';
-  submittedAt?: string;
-  reviewedAt?: string;
-  reviewedBy?: string;
+  submittedAt?: Date;
+  reviewedAt?: Date;
   comments?: string;
+  sections: {
+    tlr: FormSection;
+    research: FormSection;
+    graduation: FormSection;
+    outreach: OutreachScores;
+  };
 }
 
 interface DataContextType {
-  user: User | null;
   scores: Scores;
   submissions: Submission[];
-  login: (username: string, password: string) => boolean;
-  logout: () => void;
-  updateTLRData: (data: Partial<TLRData>) => void;
-  updateResearchData: (data: Partial<ResearchData>) => void;
-  updateGraduationData: (data: Partial<GraduationData>) => void;
-  updateOutreachData: (data: Partial<OutreachData>) => void;
-  updatePerceptionData: (data: Partial<PerceptionData>) => void;
-  submitForReview: () => void;
-  getAllSubmissions: () => Submission[];
-  approveSubmission: (submissionId: string, comments?: string) => void;
-  rejectSubmission: (submissionId: string, comments: string) => void;
+  currentSubmission: Submission | null;
+  isEditing: boolean;
+  updateTLRData: (data: Partial<TLRScores>) => Promise<boolean>;
+  updateResearchData: (data: Partial<ResearchScores>) => Promise<boolean>;
+  updateGraduationData: (data: Partial<GraduationScores>) => Promise<boolean>;
+  updateOutreachData: (data: Partial<OutreachScores>) => Promise<boolean>;
+  submitForApproval: () => void;
+  approveSubmission: (id: string, comments: string) => void;
+  rejectSubmission: (id: string, comments: string) => void;
+  editSubmission: (id: string) => void;
+  saveSubmissionChanges: () => void;
+  cancelEdit: () => void;
+  adminUpdateSection: (sectionName: keyof Submission['sections'], data: any, adminEmail: string) => void;
 }
-
-const defaultScores: Scores = {
-  tlr: { ss: 0, fsr: 0, fqe: 0, fru: 0, total: 0 },
-  research: { pu: 0, qp: 0, ipr: 0, fppp: 0, total: 0 },
-  graduation: { gph: 0, gue: 0, gms: 0, gphd: 0, total: 0 },
-  outreach: { rd: 0, wd: 0, escs: 0, pcs: 0, total: 0 },
-  perception: { pr: 0, total: 0 },
-  overall: 0
-};
-
-// Demo users for testing
-const demoUsers: User[] = [
-  { id: '1', username: 'admin1', role: 'admin', college: 'IIT Delhi' },
-  { id: '2', username: 'coord1', role: 'coordinator', college: 'IIT Delhi' },
-  { id: '3', username: 'admin2', role: 'admin', college: 'IIT Bombay' },
-  { id: '4', username: 'coord2', role: 'coordinator', college: 'IIT Bombay' },
-  { id: '5', username: 'admin3', role: 'admin', college: 'IIT Madras' },
-  { id: '6', username: 'coord3', role: 'coordinator', college: 'IIT Madras' }
-];
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [scores, setScores] = useState<Scores>(defaultScores);
+  const [scores, setScores] = useState<Scores>({
+    tlr: { ss: 0, fsr: 0, fqe: 0, fru: 0, total: 0 },
+    research: { pu: 0, qp: 0, iprf: 0, fppp: 0, total: 0 },
+    graduation: { gph: 0, gue: 0, gms: 0, grd: 0, total: 0 },
+    outreach: { rd: 0, wd: 0, escs: 0, pcs: 0, total: 0 },
+    overall: 0
+  });
+
   const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [currentSubmission, setCurrentSubmission] = useState<Submission | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
 
-  // Load data from localStorage on mount
+  // Calculate overall score whenever individual scores change
   useEffect(() => {
-    const savedUser = localStorage.getItem('nirf-user');
-    const savedScores = localStorage.getItem('nirf-scores');
-    const savedSubmissions = localStorage.getItem('nirf-submissions');
-
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
-    if (savedScores) {
-      setScores(JSON.parse(savedScores));
-    }
-    if (savedSubmissions) {
-      setSubmissions(JSON.parse(savedSubmissions));
-    }
-  }, []);
-
-  // Save to localStorage whenever data changes
-  useEffect(() => {
-    if (user) {
-      localStorage.setItem('nirf-user', JSON.stringify(user));
-    }
-  }, [user]);
-
-  useEffect(() => {
-    localStorage.setItem('nirf-scores', JSON.stringify(scores));
-  }, [scores]);
-
-  useEffect(() => {
-    localStorage.setItem('nirf-submissions', JSON.stringify(submissions));
-  }, [submissions]);
-
-  const login = (username: string, password: string): boolean => {
-    // Simple demo authentication - in real app, this would be secure
-    const foundUser = demoUsers.find(u => u.username === username && password === 'demo123');
-    if (foundUser) {
-      setUser(foundUser);
-      return true;
-    }
-    return false;
-  };
-
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('nirf-user');
-  };
-
-  const calculateTotalScore = (newScores: Scores) => {
-    return (
-      newScores.tlr.total * 0.3 +
-      newScores.research.total * 0.3 +
-      newScores.graduation.total * 0.2 +
-      newScores.outreach.total * 0.1 +
-      newScores.perception.total * 0.1
+    const overall = (
+      scores.tlr.total * 0.30 +
+      scores.research.total * 0.30 +
+      scores.graduation.total * 0.20 +
+      scores.outreach.total * 0.10
     );
+    
+    setScores(prev => ({ ...prev, overall }));
+  }, [scores.tlr.total, scores.research.total, scores.graduation.total, scores.outreach.total]);
+
+  const updateTLRData = async (data: Partial<TLRScores>): Promise<boolean> => {
+    try {
+      setScores(prev => {
+        const newTLR = { ...prev.tlr, ...data };
+        // Calculate total if individual scores are provided
+        if ('ss' in data || 'fsr' in data || 'fqe' in data || 'fru' in data) {
+          newTLR.total = newTLR.ss + newTLR.fsr + newTLR.fqe + newTLR.fru;
+        }
+        return { ...prev, tlr: newTLR };
+      });
+      return true;
+    } catch (error) {
+      console.error('Error updating TLR data:', error);
+      return false;
+    }
   };
 
-  const updateTLRData = (data: Partial<TLRData>) => {
-    setScores(prev => {
-      const newTLR = { ...prev.tlr, ...data };
-      // TLR: SS(20) + FSR(30) + FQE(20) + FRU(30) = 100 marks
-      newTLR.total = newTLR.ss + newTLR.fsr + newTLR.fqe + newTLR.fru;
-      const newScores = { ...prev, tlr: newTLR };
-      newScores.overall = calculateTotalScore(newScores);
-      return newScores;
-    });
+  const updateResearchData = async (data: Partial<ResearchScores>): Promise<boolean> => {
+    try {
+      setScores(prev => {
+        const newResearch = { ...prev.research, ...data };
+        // Calculate total if individual scores are provided
+        if ('pu' in data || 'qp' in data || 'iprf' in data || 'fppp' in data) {
+          newResearch.total = newResearch.pu + newResearch.qp + newResearch.iprf + newResearch.fppp;
+        }
+        return { ...prev, research: newResearch };
+      });
+      return true;
+    } catch (error) {
+      console.error('Error updating Research data:', error);
+      return false;
+    }
   };
 
-  const updateResearchData = (data: Partial<ResearchData>) => {
-    setScores(prev => {
-      const newResearch = { ...prev.research, ...data };
-      // Research: PU(35) + QP(40) + IPR(15) + FPPP(10) = 100 marks
-      newResearch.total = newResearch.pu + newResearch.qp + newResearch.ipr + newResearch.fppp;
-      const newScores = { ...prev, research: newResearch };
-      newScores.overall = calculateTotalScore(newScores);
-      return newScores;
-    });
+  const updateGraduationData = async (data: Partial<GraduationScores>): Promise<boolean> => {
+    try {
+      setScores(prev => {
+        const newGraduation = { ...prev.graduation, ...data };
+        // Calculate total if individual scores are provided
+        if ('gph' in data || 'gue' in data || 'gms' in data || 'grd' in data) {
+          newGraduation.total = newGraduation.gph + newGraduation.gue + newGraduation.gms + newGraduation.grd;
+        }
+        return { ...prev, graduation: newGraduation };
+      });
+      return true;
+    } catch (error) {
+      console.error('Error updating Graduation data:', error);
+      return false;
+    }
   };
 
-  const updateGraduationData = (data: Partial<GraduationData>) => {
-    setScores(prev => {
-      const newGraduation = { ...prev.graduation, ...data };
-      // Graduation: GPH(40) + GUE(15) + GMS(25) + GPHD(20) = 100 marks
-      newGraduation.total = newGraduation.gph + newGraduation.gue + newGraduation.gms + newGraduation.gphd;
-      const newScores = { ...prev, graduation: newGraduation };
-      newScores.overall = calculateTotalScore(newScores);
-      return newScores;
-    });
+  const updateOutreachData = async (data: Partial<OutreachScores>): Promise<boolean> => {
+    try {
+      setScores(prev => {
+        const newOutreach = { ...prev.outreach, ...data };
+        // Calculate total if individual scores are provided
+        if ('rd' in data || 'wd' in data || 'escs' in data || 'pcs' in data) {
+          newOutreach.total = newOutreach.rd + newOutreach.wd + newOutreach.escs + newOutreach.pcs;
+        }
+        return { ...prev, outreach: newOutreach };
+      });
+      return true;
+    } catch (error) {
+      console.error('Error updating Outreach data:', error);
+      return false;
+    }
   };
 
-  const updateOutreachData = (data: Partial<OutreachData>) => {
-    setScores(prev => {
-      const newOutreach = { ...prev.outreach, ...data };
-      // Outreach: RD(30) + WD(30) + ESCS(20) + PCS(20) = 100 marks
-      newOutreach.total = newOutreach.rd + newOutreach.wd + newOutreach.escs + newOutreach.pcs;
-      const newScores = { ...prev, outreach: newOutreach };
-      newScores.overall = calculateTotalScore(newScores);
-      return newScores;
-    });
-  };
-
-  const updatePerceptionData = (data: Partial<PerceptionData>) => {
-    setScores(prev => {
-      const newPerception = { ...prev.perception, ...data };
-      newPerception.total = newPerception.pr;
-      const newScores = { ...prev, perception: newPerception };
-      newScores.overall = calculateTotalScore(newScores);
-      return newScores;
-    });
-  };
-
-  const submitForReview = () => {
-    if (!user) return;
-
+  const submitForApproval = () => {
     const newSubmission: Submission = {
       id: Date.now().toString(),
-      collegeId: user.id,
-      collegeName: user.college,
-      coordinatorId: user.id,
-      coordinatorName: user.username,
+      collegeName: 'IIT Delhi',
+      coordinatorName: 'Dr. Rajesh Kumar',
+      coordinatorEmail: 'coordinator@iitdelhi.ac.in',
       scores: { ...scores },
       status: 'submitted',
-      submittedAt: new Date().toISOString()
+      submittedAt: new Date(),
+      sections: {
+        tlr: {
+          data: scores.tlr,
+          coordinatorEmail: 'coordinator@iitdelhi.ac.in',
+          lastModified: new Date(),
+          modifiedBy: 'coordinator'
+        },
+        research: {
+          data: scores.research,
+          coordinatorEmail: 'coordinator@iitdelhi.ac.in',
+          lastModified: new Date(),
+          modifiedBy: 'coordinator'
+        },
+        graduation: {
+          data: scores.graduation,
+          coordinatorEmail: 'coordinator@iitdelhi.ac.in',
+          lastModified: new Date(),
+          modifiedBy: 'coordinator'
+        },
+        outreach: scores.outreach
+      }
     };
 
     setSubmissions(prev => [...prev, newSubmission]);
   };
 
-  const getAllSubmissions = (): Submission[] => {
-    return submissions;
+  const approveSubmission = (id: string, comments: string) => {
+    setSubmissions(prev =>
+      prev.map(sub =>
+        sub.id === id
+          ? { ...sub, status: 'approved' as const, reviewedAt: new Date(), comments }
+          : sub
+      )
+    );
   };
 
-  const approveSubmission = (submissionId: string, comments?: string) => {
-    setSubmissions(prev => prev.map(sub => 
-      sub.id === submissionId 
-        ? { 
-            ...sub, 
-            status: 'approved' as const, 
-            reviewedAt: new Date().toISOString(),
-            reviewedBy: user?.username,
-            comments 
+  const rejectSubmission = (id: string, comments: string) => {
+    setSubmissions(prev =>
+      prev.map(sub =>
+        sub.id === id
+          ? { ...sub, status: 'rejected' as const, reviewedAt: new Date(), comments }
+          : sub
+      )
+    );
+  };
+
+  const editSubmission = (id: string) => {
+    const submission = submissions.find(sub => sub.id === id);
+    if (submission) {
+      setCurrentSubmission(submission);
+      setScores(submission.scores);
+      setIsEditing(true);
+    }
+  };
+
+  const saveSubmissionChanges = () => {
+    if (currentSubmission) {
+      setSubmissions(prev =>
+        prev.map(sub =>
+          sub.id === currentSubmission.id
+            ? { ...sub, scores: { ...scores } }
+            : sub
+        )
+      );
+      setCurrentSubmission(null);
+      setIsEditing(false);
+    }
+  };
+
+  const cancelEdit = () => {
+    setCurrentSubmission(null);
+    setIsEditing(false);
+    // Reset scores to original state
+    setScores({
+      tlr: { ss: 0, fsr: 0, fqe: 0, fru: 0, total: 0 },
+      research: { pu: 0, qp: 0, iprf: 0, fppp: 0, total: 0 },
+      graduation: { gph: 0, gue: 0, gms: 0, grd: 0, total: 0 },
+      outreach: { rd: 0, wd: 0, escs: 0, pcs: 0, total: 0 },
+      overall: 0
+    });
+  };
+
+  const adminUpdateSection = (sectionName: keyof Submission['sections'], data: any, adminEmail: string) => {
+    if (currentSubmission) {
+      // Update the current submission being edited
+      const updatedSubmission = {
+        ...currentSubmission,
+        sections: {
+          ...currentSubmission.sections,
+          [sectionName]: {
+            ...currentSubmission.sections[sectionName],
+            data,
+            lastModified: new Date(),
+            modifiedBy: 'admin' as const
           }
-        : sub
-    ));
+        }
+      };
+      
+      setCurrentSubmission(updatedSubmission);
+      
+      // Update the submissions array
+      setSubmissions(prev =>
+        prev.map(sub =>
+          sub.id === currentSubmission.id ? updatedSubmission : sub
+        )
+      );
+      
+      // Update current scores for real-time display
+      setScores(prev => ({
+        ...prev,
+        [sectionName]: data
+      }));
+    }
   };
 
-  const rejectSubmission = (submissionId: string, comments: string) => {
-    setSubmissions(prev => prev.map(sub => 
-      sub.id === submissionId 
-        ? { 
-            ...sub, 
-            status: 'rejected' as const, 
-            reviewedAt: new Date().toISOString(),
-            reviewedBy: user?.username,
-            comments 
-          }
-        : sub
-    ));
-  };
-
-  const value: DataContextType = {
-    user,
+  const value = {
     scores,
     submissions,
-    login,
-    logout,
+    currentSubmission,
+    isEditing,
     updateTLRData,
     updateResearchData,
     updateGraduationData,
     updateOutreachData,
-    updatePerceptionData,
-    submitForReview,
-    getAllSubmissions,
+    submitForApproval,
     approveSubmission,
-    rejectSubmission
+    rejectSubmission,
+    editSubmission,
+    saveSubmissionChanges,
+    cancelEdit,
+    adminUpdateSection
   };
 
-  return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
+  return (
+    <DataContext.Provider value={value}>
+      {children}
+    </DataContext.Provider>
+  );
 };
 
-export const useData = (): DataContextType => {
+export const useData = () => {
   const context = useContext(DataContext);
   if (context === undefined) {
     throw new Error('useData must be used within a DataProvider');

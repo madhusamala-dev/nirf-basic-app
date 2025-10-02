@@ -1,8 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   BookOpen, 
@@ -11,103 +9,45 @@ import {
   Globe, 
   BarChart3, 
   LogOut, 
-  CheckCircle, 
-  Clock, 
-  XCircle,
+  CheckCircle,
   User
 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
-import { useData } from '../context/DataContext';
-import TLRForm from '../components/forms/TLRForm';
-import ResearchForm from '../components/forms/ResearchForm';
-import GraduationForm from '../components/forms/GraduationForm';
-import OutreachForm from '../components/forms/OutreachForm';
-import AdminDashboard from '../components/admin/AdminDashboard';
+import { useAuth } from '../../context/AuthContext';
+import { useData } from '../../context/DataContext';
+import TLRForm from '../forms/TLRForm';
+import ResearchForm from '../forms/ResearchForm';
+import GraduationForm from '../forms/GraduationForm';
+import OutreachForm from '../forms/OutreachForm';
 
-const Dashboard: React.FC = () => {
-  const navigate = useNavigate();
-  const { user, logout, isAuthenticated } = useAuth();
-  const { scores, submissions, submitForApproval, approveSubmission, rejectSubmission } = useData();
+const CoordinatorDashboard: React.FC = () => {
+  const { user, logout } = useAuth();
+  const { scores, submitForReview } = useData();
   const [activeTab, setActiveTab] = useState('tlr');
 
-  // Redirect if not authenticated
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/login');
-    }
-  }, [isAuthenticated, navigate]);
-
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
-
   const handleSubmitForReview = () => {
-    submitForApproval();
+    submitForReview();
     alert('Data submitted for admin review successfully!');
   };
 
-  const handleEditSubmission = (submissionId: string) => {
-    // Implementation for editing submission
-    console.log('Editing submission:', submissionId);
-  };
-
-  if (!user) {
-    return null; // Will redirect in useEffect
-  }
-
-  // Admin Dashboard
-  if (user.role === 'admin') {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <header className="bg-white shadow-sm border-b">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-              <div>
-                <h1 className="text-xl font-semibold text-gray-900">NIRF Admin Dashboard</h1>
-                <p className="text-sm text-gray-500">Review and approve institutional submissions</p>
-              </div>
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2 text-sm text-gray-600">
-                  <User className="h-4 w-4" />
-                  <span>Welcome, {user.name}</span>
-                </div>
-                <Button variant="outline" onClick={handleLogout}>
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Logout
-                </Button>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <AdminDashboard onEditSubmission={handleEditSubmission} />
-        </main>
-      </div>
-    );
-  }
-
-  // Coordinator Dashboard
   return (
-    <div className="min-h-screen bg-gray-50">
+    <>
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div>
               <h1 className="text-xl font-semibold text-gray-900">NIRF Data Entry Portal</h1>
-              <p className="text-sm text-gray-500">{user.college}</p>
+              <p className="text-sm text-gray-500">{user?.college.name}</p>
             </div>
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2 text-sm text-gray-600">
                 <User className="h-4 w-4" />
-                <span>Welcome, {user.name}</span>
+                <span>Welcome, {user?.name}</span>
               </div>
               <div className="text-right">
                 <div className="text-lg font-bold text-blue-600">{scores.overall.toFixed(1)}</div>
                 <div className="text-xs text-gray-500">Overall Score</div>
               </div>
-              <Button variant="outline" onClick={handleLogout}>
+              <Button variant="outline" onClick={logout}>
                 <LogOut className="h-4 w-4 mr-2" />
                 Logout
               </Button>
@@ -217,8 +157,8 @@ const Dashboard: React.FC = () => {
           </CardContent>
         </Card>
       </main>
-    </div>
+    </>
   );
 };
 
-export default Dashboard;
+export default CoordinatorDashboard;
